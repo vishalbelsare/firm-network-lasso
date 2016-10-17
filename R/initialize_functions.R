@@ -14,8 +14,6 @@ initialize_fake_links <- function(R,N) {
   beta <- runif(N,0.1,0.9)
 
   # Plant output
-  # Now need to add an international region and the 'other' industry.
-  # for now, just add the other industry in every region.
   s <- rlnorm(N,0,1) * N
 
   # Plant's region
