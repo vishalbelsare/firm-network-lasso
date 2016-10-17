@@ -1,0 +1,131 @@
+\documentclass[11pt]{article}
+%\usepackage[margin=1.25in]{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+%\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+%\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{natbib}
+%\usepackage{verbatim}
+
+%\usepackage{pslatex}
+%\usepackage{fullpage}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\usepackage{amsmath}
+
+\newtheorem{definition}{Definition}
+\newcommand{\mydef}[1]{\begin{definition}#1\end{definition}}
+
+\begin{document}
+\title{Inferring Unobserved Firm Networks}
+\author{Jesse Tweedle}
+\date{}
+%\address{Statistics Canada\\University of Calgary}
+%\email{jesse.tweedle@gmail.com}
+
+
+ \maketitle
+
+\begin{abstract}
+
+Use data and machine learning to infer unobserved firm-firm trading networks. Given data on firm characteristics, and a detailed geographic trading network, infer the unobserved firm-firm trading network that matches the Canadian national accounts.
+
+\end{abstract}
+
+\section{Equations}
+
+The first set of equations to match is 
+\begin{gather}
+\sum_{r=1}^R I_r a_{ri} + \sum_{j=1}^N s_j g_{ji} = s_i , \quad i = 1,\ldots, N\\
+I \cdot a_{\cdot i} + s \cdot g_{\cdot i} = s_i, \quad i = 1,\ldots, N
+\end{gather}
+
+Write $Z = (I,s) = (I_1,\ldots, I_R, s_1, \ldots, s_N)$, which is length $R+N$. Write $s=c$ to match notation in ML papers.
+\[
+X = 
+\begin{bmatrix}
+    Z & 0 & \dots  & 0 \\
+    0 & Z &  \dots  & 0 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0  & \dots  & Z
+\end{bmatrix}
+\]
+
+Then $X$ has dimensions $N \times (R+N)N$.
+
+Let $y$ be a combined vectorized $A$ and $G$, so that $y$ is a vector with length $(R + N) N$. 
+\[ 
+y = (a_{11},a_{21},\ldots,a_{R1},g_{11},g_{21},\ldots,g_{N1},\ldots,a_{1N},\ldots,a_{RN},g_{1N},\ldots,g_{NN}) 
+\]
+Or, write $a_{\cdot i}$ as the $i$-th column of $A$, and so on.
+\[ y = (a_{\cdot 1},g_{ \cdot 1},\ldots,a_{ \cdot N},g_{ \cdot N})\]
+
+Then the benchmarking equations are:
+
+\begin{gather}
+X y = c
+\end{gather}
+
+Or,
+\[
+\underbrace{\begin{bmatrix}
+    I & s & 0 & 0 & \dots & 0  & 0 \\
+    0 & 0 & I & s &  \dots & 0 & 0 \\
+    \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+    0 & 0  & 0 & 0 & \dots  &  I & s
+\end{bmatrix}}_{N \times (RN+N^2)}
+\underbrace{\begin{bmatrix}
+	a_{\cdot 1} \\
+	g_{\cdot 1} \\
+	\vdots \\
+	a_{\cdot N} \\
+	g_{\cdot N} 	
+\end{bmatrix}}_{(RN+N^2) \times 1}
+=
+\underbrace{\begin{bmatrix}
+	s_1 \\
+	\vdots \\
+	s_{N} 	
+\end{bmatrix}}_{N\times 1}
+\]
+
+And the minimization problem is:
+%Other characteristics are $c$, $N\times1$ (or more), and $X$, $N \times (RN + N^2)$. Then the problem is 
+\begin{gather}
+\min_y || X y - c|| + \lambda || y ||
+\end{gather}
+
+This is an underdetermined system, since the number of variables is much more than the number of ``observations'' (which, in this case, are firm characteristics and later, national accounts). The estimated $y$ gives the most sparse implied network that matches the national accounts. Density can be increased by using elastic-net (which combines $l1$ and $l2$ regularization).  To use the geographic trade network, we assume the implied firm-firm network identified from that as a subset of the true network, and leave those edges out of the penalty $||y||$.
+
+Now use Lasso algorithm to solve this problem.
+
+Short term strategy: set $\beta=0.5$, draw random $s_i$, random firm locations $r_i$, calculate regional income $I_r = \sum_{i \in r} \beta s_i$, then construct $X$ and $c$, then run glmnet for different $R,N$, skewness in $s$ and so on. See if anything works.
+
+Use the implied $A$ and $G$ to solve the equations and see how close it gets. Check sparseness, check network measures, and so on. Does each firm have at least one customer, at least one supplier? Make sure $g_{ii}=0$ somehow?
+
+ 
+%Topics: node identification and link prediction in multi-layer networks. Link prediction. Multi-plex networks, multi-layer networks, complex networks. Matching across layers. Node matching across networks / graphs.
+
+%Subtitle: application to firm-firm trade network.
+
+
+%\subsection{Algorithm}
+%But, if matrix dense, $E=[1]$, then exact solution can be found, and $|| X - \hat{X} ||_2 =0$. But $\lambda || E ||_1 = \lambda N^2$. So idea is to reduce $E$ as much as possible, but the thing still makes sense. Or, I can ditch the benchmarking altogether, since it should be exact, or at least close. Aka, if it's not close, ditch the solution altogether. How to pick algorithm? Some edge-picking algorithm. But make sure...stuff still works out.
+
+\bibliographystyle{chicago}
+\bibliography{inferring-firm-networks-2}
+
+\end{document}
+
+
+
+
+
+
+
+
