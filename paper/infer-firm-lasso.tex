@@ -173,6 +173,39 @@ Now use \texttt{glmnet} to solve this problem. Simulation testing: set $R$, $N$,
 
 It's not bad. If not sparse, everything looks pretty great, every equation is satisfied or close to it. When it's sparse (say 5\%), the sizes aren't terrible (0.9 $R^2$ for non-zero predicted sizes, and 0.99 $R^2$ for firms above the median). Rank is almost always preserved, but the bottom of the distribution curves disastrously. The other problem: the sum equations \eqref{eq:rowsuma} and \eqref{eq:rowsumg} don't seem to hold ever.  One solution might be post-processing of the $A$ and $G$.
 
+\section{Next up}
+
+To solve the dimensionality problem, the idea is to solve the problem
+\begin{gather}
+\min_y || X y - c||_{\ell 2} + \lambda || y ||_{\ell 1}
+\end{gather}
+
+By row?
+\begin{gather}
+\min_{y} || X_{i \cdot} y - c_i || + \lambda || y ||_{\ell 1} 
+\end{gather}
+
+But of course lots of $X_{i \cdot}$ are 0, so we can make that much smaller, say
+\[
+\tilde{X}_i \tilde{y}_i - c_i = 
+\begin{bmatrix}
+	M_1 & \dots & M_R & s_1 & \dots & s_N
+\end{bmatrix}
+\begin{bmatrix}
+	a_{1i} \\
+	\vdots \\
+	a_{Ri} \\
+	g_{1i} \\
+	\vdots \\
+	g_{Ni}
+\end{bmatrix}
+-
+s_i
+\]
+
+So solve this problem for each $i$; there's $R+N$ unknowns and one equation. So solve this $i$ problem, then switch to the $i+1$ problem. That's different than the \texttt{glasso} problem though, they permute the columns, and sort of solve the whole thing?
+
+
 %Use the implied $A$ and $G$ to solve the equations and see how close it gets. Check sparseness, check network measures, and so on. Does each firm have at least one customer, at least one supplier? Make sure $g_{ii}=0$ somehow?
 
  

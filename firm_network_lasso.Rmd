@@ -1,0 +1,141 @@
+---
+title: "Firm Network Lasso"
+author: "Jesse Tweedle"
+date: '2016-10-18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tibble)
+library(Matrix)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(glmnet)
+
+df_to_s <- function(tdf,dims) {
+  with(tdf, sparseMatrix(i=i,j=j,x=x,dims=dims))
+#  sparseMatrix(i=tdf$i,j=tdf$j,x=tdf$x,dims=dims) # make sure dims here; if last i or j is missing, dims might not match.
+}
+
+initialize_fake_s <- function(R,N) {
+
+  # Plant value-added share
+  beta <- runif(N,0.1,0.9)
+  
+  # Plant output
+  s <- rlnorm(N,0,1) * N
+  
+  # Plant's region
+  ir <- rbind(tibble(j=1:(N),i=sample(1:R,N,replace=TRUE),x=1)) %>% df_to_s(dims=c(R,N))
+  
+  # Regional income
+  I <- ir %*% (beta * s)
+  
+  # Return fake data; don't need non-zero edge matrices anymore.
+  return(list(beta=beta,I=I,ir=ir,s=s))
+}
+```
+
+## Setup
+
+```{r}
+R <- 10
+N <- 100
+
+beta <- runif(N,0.1,0.9)
+
+# Plant output
+s <- rlnorm(N,0,1) * N
+
+# Plant's region
+ir <- rbind(tibble(j=1:(N),
+                   i=sample(1:R,N,replace=TRUE),x=1)) %>% 
+  df_to_s(dims=c(R,N))
+
+# Regional income
+I <- (ir %*% (beta * s))[,1]
+
+I_mc <- I %>% t() %>% list() %>%  rep(N) %>% bdiag()
+s_mc <- s %>% t() %>% list() %>%  rep(N) %>% bdiag()
+X_mc <- cbind(I_mc,s_mc)
+
+c_mc <- s
+
+X_ari <- Reduce(cbind, .sparseDiagonal(R) %>% list() %>% rep(N))
+X_gij <- Reduce(cbind, .sparseDiagonal(N) %>% list() %>% rep(N))
+
+X <- rbind(X_mc,bdiag(X_ari,X_gij))
+
+c_ari <- rep_len(1,R)
+c_gij <- 1-args$beta
+
+c <- c(c_mc,c_ari,c_gij)
+```
+
+## Using `glmnet`
+```{r glmnet}
+# deviance for some reason can go above 100%? I just want it to be as high as possible.
+glmnet.control(devmax = 5)
+# have a lot of lambdas. just want to get as close as possible to the data,
+# don't need to worry about overfitting. it should exactly fit the "training" data.
+#,lower.limits=0,upper.limits=1) <- may or may not need this.
+fit <- glmnet(X,c,alpha=1,nlambda=1000,intercept=FALSE)
+y <- coef(fit)
+```
+
+## Get A and G
+
+```{r getag}
+
+# last one is to get rid of intercept index.
+yx <- y %>% summary() %>% tbl_df() %>% filter(j==max(j)) %>% select(-j) %>% mutate(i=i-1) 
+
+# Rearrange y to get A
+y_sa <- yx %>% filter(i<=R*N) %>% mutate(col=floor((i-1)/R)+1,row=i-(col-1)*R)
+A <- sparseMatrix(i=y_sa$row,j=y_sa$col,x=y_sa$x,dims=c(R,N))
+
+# Rearrange y to get G
+y_ga <- yx %>% filter(i>R*N) %>% mutate(i=i-R*N) %>% mutate(col=floor((i-1)/N)+1,row=i-(col-1)*N)
+G <- sparseMatrix(i=y_ga$row,j=y_ga$col,x=y_ga$x,dims=c(N,N))
+
+```
+
+## Are the solutions any good?
+```{r checkag}
+
+rowSums(A) %>% summary() # pretty far from correct, should all be 1.
+(rowSums(G) + args$beta) %>% summary() # pretty far from correct, should all be 1.
+
+
+```
+
+## 
+
+```{r checks}
+
+# Solve for implied s
+s_hat <- t(A) %*% (I %>% matrix(nrow=R,ncol=1)) + t(G) %*% (((1-args$beta)*s) %>% matrix(nrow=N,ncol=1)) 
+df <- tibble(s_hat=s_hat[,1],s=s)
+lm(s_hat %>% log() ~ s %>% log(),data=df %>% filter(s_hat>0)) %>% summary()
+
+```
+
+## Plot the data
+
+Plot the implied `s_hat` versus the original data `s`:
+
+```{r plotall, echo=FALSE}
+ggplot(df %>% filter(s_hat>0),aes(x=s,y=s_hat))+geom_point(alpha=0.5) + scale_x_log10() + scale_y_log10() 
+```
+
+## See what happens.
+
+
+
+
+
+
+
