@@ -32,7 +32,7 @@ sourceDir(paste0(getwd(),"/R"))
 
 #set.seed(9) 
 R <- 10
-N <- 100
+N <- 250
 
 args <- initialize_fake_s(R,N)
 
