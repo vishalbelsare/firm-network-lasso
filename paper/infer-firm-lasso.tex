@@ -206,6 +206,30 @@ s_i
 So solve this problem for each $i$; there's $R+N$ unknowns and one equation. So solve this $i$ problem, then switch to the $i+1$ problem. That's different than the \texttt{glasso} problem though, they permute the columns, and sort of solve the whole thing?
 
 
+\section{Add industry equations}
+
+Each firm $i$ now has an industry $k$. An industry intermediate IO table looks like
+\[
+G^I =
+\begin{bmatrix}
+    g^I_{11} & g^I_{12} &\dots  & g^I_{1K}  \\
+    g^I_{21} & g^I_{22}  &\dots  & g^I_{2K} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    g^I_{K1} & g^I_{K2} & \dots  &  g^I_{KK}
+\end{bmatrix}
+\]
+
+Which we can possibly get to via $G$ by...multiplying a firm-industry matrix $IK$
+\[
+IK = [x_{ik} ]
+\]
+where $x_{ik} = \mathbf{1} \{ \text{firm } i \in \text{industry } k \}$. This is a sparse matrix with one non-zero element per row, and $IK$ is $N \times K$. Then I can possibly get $G^I$ by
+\[
+G^I = IK' \times G \times IK
+\]
+Well, probably not, but something like that. Will probably have to go to actual expenditures, and then normalize, or something.
+
+
 %Use the implied $A$ and $G$ to solve the equations and see how close it gets. Check sparseness, check network measures, and so on. Does each firm have at least one customer, at least one supplier? Make sure $g_{ii}=0$ somehow?
 
  
