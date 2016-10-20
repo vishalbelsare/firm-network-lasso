@@ -14,7 +14,7 @@ initialize_fake_s <- function(R,Z,N) {
   beta <- runif(N,0.1,0.9)
   
   # Plant output
-  s <- rlnorm(N,0,1) * N
+  s <- rlnorm(N,0,1)
   
   # Plant's region
   ir <- rbind(tibble(j=1:N,i=sample(1:R,N,replace=TRUE),x=1)) %>% df_to_s(dims=c(R,N))
