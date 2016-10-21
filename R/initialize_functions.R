@@ -3,9 +3,9 @@
 # Functions to generate fake parameters and data
 # License: MIT
 
-# "Granularity, Network Asymmetry and Aggregate Volatility"
+# ""
 # Jesse Tweedle
-# Sep 15, 2016
+# Oct, 2016
 ########################################################################
 
 initialize_fake_s <- function(R,Z,N) {
@@ -20,8 +20,9 @@ initialize_fake_s <- function(R,Z,N) {
   ir <- rbind(tibble(j=1:N,i=sample(1:R,N,replace=TRUE),x=1)) %>% df_to_s(dims=c(R,N))
   
   # Plant's industry, total of J.
-  iz <- rbind(tibble(j=1:N,i=sample(1:Z,N,replace=TRUE),x=1)) %>% df_to_s(dims=c(Z,N))
-
+  # iz <- tibble(j=1:N,i=sample(1:Z,N,replace=TRUE),x=1) %>% df_to_s(dims=c(Z,N))
+  iz <- tibble(j=1:N,i=rep(1:Z,ceiling(N/Z))[1:N],x=1) %>% df_to_s(dims=c(Z,N))
+  
     # Regional income
   I <- ir %*% (beta * s)
   

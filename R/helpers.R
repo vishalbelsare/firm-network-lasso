@@ -8,6 +8,43 @@
 # Sep 15, 2016
 ########################################################################
 
+startup <- function() {
+  # Load relevant libraries:
+  
+  # For sparse matrices
+  library(Matrix)
+  
+  # Tidy packages
+  library(dplyr)
+  library(tibble)
+  library(stringr)
+  library(tidyr)
+  library(ggplot2)
+  
+  # For Lasso.
+  library(glmnet)
+  
+  # Clean.
+  rm(list=ls(all=TRUE))
+  gc()
+  
+  # Stop on warnings. Much easier for debugging.
+  options(warn = 2)
+  
+  sourceDir(paste0(getwd(),"/R"))
+}
+
+# Source all .R files to get functions. Make sure
+# there are only functions in the R/ directory.
+sourceDir <- function(path, trace = TRUE, ...) {
+  # Tip from http://jeromyanglim.tumblr.com/post/33418725712/how-to-source-all-r-files-in-a-directory
+  for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
+    if(trace) cat(nm,":")
+    source(file.path(path, nm), ...)
+    if(trace) cat("\n")
+  }
+}
+
 # Convert sparseMatrix to tbl_df.
 s_to_df <- function(m) {
   m %>% as("sparseMatrix") %>% summary() %>% tbl_df()
