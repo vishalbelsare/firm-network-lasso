@@ -36,7 +36,8 @@ glmnet_z <- function(z,args) {
   # Number of firms in this industry.
   z_len <- length(sz)
   
-  # The market clearing equations
+  # The market clearing equations; would like to remove s_i from each row i. Could just calculate the relevant
+  # position in X_mc and set them all to 0? Should only be N operations.
   X_mc <- c(I,s) %>% t() %>% list() %>%  rep(z_len) %>% bdiag()
   
   # Estimate elastic net / lasso.
