@@ -1,9 +1,9 @@
 ########################################################################
 # main_x.R
-# Clean and load relevant files
+# Clean, load and run relevant files.
 # License: MIT
 
-# ""
+# Project: firm-network-lasso
 # Jesse Tweedle
 # Oct 18, 2016
 ########################################################################
@@ -14,8 +14,8 @@ startup()
 ## Initialize things.
 #set.seed(9) 
 R <- 2  # Number of regions
-N <- 500 # Number of firms
-Z <- 2  # Number of industries; each industry must have more than one firm, 
+N <- 1000 # Number of firms
+Z <- 20  # Number of industries; each industry must have more than one firm, 
         # or glmnet fails (at least until I add more equations).
 
 # Create fake data.
@@ -31,7 +31,10 @@ preprocess_args <- list(I=I,iz=iz,s=s,R=R,N=N)
 
 # Apply glmnet_z to each industry, and return y,X_mc and X_ag that have been
 # reduced to the possible of nonzero elements
-res <- lapply(1:Z,FUN=glmnet_z,args=preprocess_args)
+cl <- makeCluster(2)
+res <- parLapply(cl=cl,X=1:Z,fun=glmnet_z,args=preprocess_args)
+stopCluster(cl)
+#res <- lapply(1:Z,FUN=glmnet_z,args=preprocess_args)
 gc()
 
 somey <- unlist(res)[seq(1,3*Z,3)]
@@ -135,5 +138,5 @@ gchk <- (rowSums(G) + args$beta) %>% summary() # pretty far from correct, should
 
 # How sparse are A and G combined? Are the rowSums equations satisfied?
 print(str_c("sparsity: ",nnz,"; "))
-achk %>% print()
+achk %>% print() # looks to be slightly off, about 60% too high., G too low.
 gchk %>% print()

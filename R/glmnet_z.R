@@ -11,9 +11,17 @@
 
 
 glmnet_z <- function(z,args) {
+  
+  # May have to change this if new environment doesn't know the package working directory
+  dir <- getwd()
+  
+  # Get helper functions (including load_libraries())
+  source(paste0(dir,"/R/helpers.R"))
+  load_libraries(inside_parallel=TRUE)
+  
   # Try to manage memory from previous calls. 
   gc()
-  print(str_c("industry: ", z))
+  sprintf("industry: %d", z)
   
   # Save important arguments.
   I <- args$I

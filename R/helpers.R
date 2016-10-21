@@ -8,7 +8,7 @@
 # Sep 15, 2016
 ########################################################################
 
-startup <- function() {
+load_libraries <- function(inside_parallel=FALSE) {
   # Load relevant libraries:
   
   # For sparse matrices
@@ -16,13 +16,23 @@ startup <- function() {
   
   # Tidy packages
   library(dplyr)
-  library(tibble)
-  library(stringr)
-  library(tidyr)
-  library(ggplot2)
   
   # For Lasso.
   library(glmnet)
+  
+  
+  if (!inside_parallel) {
+    # Tidy packages
+    library(tibble)
+    library(stringr)
+    library(tidyr)
+    library(ggplot2)
+    
+    # for parallelization.
+    library(parallel)
+  }
+}
+startup <- function() {
   
   # Clean.
   rm(list=ls(all=TRUE))
@@ -32,6 +42,8 @@ startup <- function() {
   options(warn = 2)
   
   sourceDir(paste0(getwd(),"/R"))
+  
+  load_libraries()
 }
 
 # Source all .R files to get functions. Make sure
