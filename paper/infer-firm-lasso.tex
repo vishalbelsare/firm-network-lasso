@@ -57,10 +57,10 @@ g_{ii} = 0 \\
 \[
 X_{mc} = 
 \begin{bmatrix}
-    M & 0 &\dots  & 0 & s & 0 & \dots & 0\\
-    0 & M &\dots  & 0 & 0 & s &\dots  & 0\\
-    \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \ddots & \vdots \\
-    0 & 0 & \dots  & M & 0 & 0 &\dots  & s
+    M & s &  0 & 0 & \dots  & 0 & 0\\
+    0 & 0 & M & s &\dots  & 0 & 0 \\
+    \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots  \\
+    0 & 0 & 0 & 0 & \dots  & M & s
 \end{bmatrix}
 \]
 
@@ -69,7 +69,7 @@ Then $X$ has dimensions $N \times (R+N)N$ (this may be a problem later---it's sp
 There are also $R+N$ equations that require the expenditure shares add up to 1.
 
 \[
-X_{a} = 
+X_{ag} = 
 \begin{bmatrix}
     1 & 0 &\dots  & 0 & \dots & 1 & 0 & \dots & 0\\
     0 & 1 &\dots  & 0 & \dots & 0 & 1 &\dots  & 0\\
@@ -77,25 +77,25 @@ X_{a} =
     0 & 0 & \dots  & 1 & \dots & 0 & 0 &\dots  & 1
 \end{bmatrix} = 
 \underbrace{\begin{bmatrix}
-I_R \ldots I_R
-\end{bmatrix}}_{R \times R N}
+I_{R+N} \ldots I_{R+N}
+\end{bmatrix}}_{(R+N) \times (R+N) N}
 \]
 
-And $X_g$ is similar,
-\[
-X_{g} = 
-\underbrace{\begin{bmatrix}
-I_N \ldots I_N
-\end{bmatrix}}_{N \times N^2}
-\]
-Combine those two into $Z$
-\[
-Z = 
-\begin{bmatrix}
-X_a & 0 \\
-0 & X_g
-\end{bmatrix}
-\]
+%And $X_g$ is similar,
+%\[
+%X_{g} = 
+%\underbrace{\begin{bmatrix}
+%I_N \ldots I_N
+%\end{bmatrix}}_{N \times N^2}
+%\]
+%Combine those two into $Z$
+%\[
+%Z = 
+%\begin{bmatrix}
+%X_a & 0 \\
+%0 & X_g
+%\end{bmatrix}
+%\]
 
 
 And then construct $X$ as
@@ -103,7 +103,7 @@ And then construct $X$ as
 X = 
 \begin{bmatrix}
 X_{mc} \\
-Z
+X_{ag}
 \end{bmatrix}
 \]
 
@@ -119,10 +119,14 @@ s \\
 
 Let $y$ be a combined vectorized $A$ and $G$, so that $y$ is a vector with length $(R + N) N$. 
 \[ 
-y' = (a_{11},a_{21},\ldots,a_{R1},\ldots,a_{1N},\ldots,a_{RN},g_{11},g_{21},\ldots,g_{N1},g_{1N},\ldots,g_{NN}) 
+%y' = (a_{11},a_{21},\ldots,a_{R1},\ldots,a_{1N},\ldots,a_{RN},g_{11},g_{21},\ldots,g_{N1},g_{1N},\ldots,g_{NN}) 
+y' = (a_{11},a_{21},\ldots,a_{R1},g_{11},g_{21},\ldots,g_{N1},\ldots,a_{1N},\ldots,a_{RN},g_{1N},\ldots,g_{NN}) 
 \]
 Or, write $a_{\cdot i}$ as the $i$-th column of $A$, and so on.
-\[ y' = (a_{\cdot 1},\ldots,a_{ \cdot N},g_{ \cdot 1},\ldots,g_{ \cdot N})\]
+\[ 
+%y' = (a_{\cdot 1},\ldots,a_{ \cdot N},g_{ \cdot 1},\ldots,g_{ \cdot N})
+y' = (a_{\cdot 1},g_{ \cdot 1},\ldots,a_{ \cdot N},g_{ \cdot N})
+\]
 
 We have the three things we need: $c$ is $(N + R + N) \times 1$, $y$ is $(RN + N^2)\times 1$, and $X$ is $(N+R+N)\times (RN + N^2)$, and the set of equations to solve is:
 
@@ -130,36 +134,36 @@ We have the three things we need: $c$ is $(N + R + N) \times 1$, $y$ is $(RN + N
 X y = c
 \end{gather}
 
-Or,
-\[
-\underbrace{\begin{bmatrix}
-    I & 0 &\dots  & 0 & s & 0 & \dots & 0\\
-    0 & I &\dots  & 0 & 0 & s &\dots  & 0\\
-    \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \ddots & \vdots \\
-    0 & 0 & \dots  & I & 0 & 0 &\dots  & s
-\end{bmatrix}}_{N \times (RN+N^2)}
-\underbrace{\begin{bmatrix}
-	a_{\cdot 1} \\
-	a_{\cdot N} \\
-	\vdots \\
-	g_{\cdot 1} \\
-	g_{\cdot N} 	
-\end{bmatrix}}_{(RN+N^2) \times 1}
-=
-\underbrace{\begin{bmatrix}
-	s_1 \\
-	\vdots \\
-	s_{N} 	
-\end{bmatrix}}_{N\times 1}
-\]
+%Or,
+%\[
+%\underbrace{\begin{bmatrix}
+%    I & 0 &\dots  & 0 & s & 0 & \dots & 0\\
+%    0 & I &\dots  & 0 & 0 & s &\dots  & 0\\
+%    \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+%    0 & 0 & \dots  & I & 0 & 0 &\dots  & s
+%\end{bmatrix}}_{N \times (RN+N^2)}
+%\underbrace{\begin{bmatrix}
+%	a_{\cdot 1} \\
+%	a_{\cdot N} \\
+%	\vdots \\
+%	g_{\cdot 1} \\
+%	g_{\cdot N} 	
+%\end{bmatrix}}_{(RN+N^2) \times 1}
+%=
+%\underbrace{\begin{bmatrix}
+%	s_1 \\
+%	\vdots \\
+%	s_{N} 	
+%\end{bmatrix}}_{N\times 1}
+%\]
 
-And the minimization problem is:
+And the $\ell 1$ minimization problem is:
 %Other characteristics are $c$, $N\times1$ (or more), and $X$, $N \times (RN + N^2)$. Then the problem is 
 \begin{gather}
-\min_y || X y - c||_2 + \lambda || y ||_1
+\min_y || X y - c||_2 + \lambda || y ||_{\ell 1}
 \end{gather}
 
-Or:
+Or the elastic net:
 \begin{gather}
 \min_y || X y - c||_2 + \lambda \left( (1-\alpha) \frac{1}{2} || y ||^2_{\ell 2} + \alpha || y ||_{\ell 1} \right)
 \end{gather}
@@ -180,30 +184,14 @@ To solve the dimensionality problem, the idea is to solve the problem
 \min_y || X y - c||_{\ell 2} + \lambda || y ||_{\ell 1}
 \end{gather}
 
-By row?
+By industry?
 \begin{gather}
 \min_{y} || X_{i \cdot} y - c_i || + \lambda || y ||_{\ell 1} 
 \end{gather}
 
-But of course lots of $X_{i \cdot}$ are 0, so we can make that much smaller, say
-\[
-\tilde{X}_i \tilde{y}_i - c_i = 
-\begin{bmatrix}
-	M_1 & \dots & M_R & s_1 & \dots & s_N
-\end{bmatrix}
-\begin{bmatrix}
-	a_{1i} \\
-	\vdots \\
-	a_{Ri} \\
-	g_{1i} \\
-	\vdots \\
-	g_{Ni}
-\end{bmatrix}
--
-s_i
-\]
+So solve this problem for each industry $k$; there's $(R+N) | k | $ unknowns and one equation. So solve these problems, then use the non-zero coefficients to reduce the dimension of $X$, $y$ and $c$ in the main problem.
 
-So solve this problem for each $i$; there's $R+N$ unknowns and one equation. So solve this $i$ problem, then switch to the $i+1$ problem. That's different than the \texttt{glasso} problem though, they permute the columns, and sort of solve the whole thing?
+This may only work if I had industry $\times$ industry conditions inside each glmnet industry call. Otherwise it won't come close to matching the row sum equations later.
 
 
 \section{Add industry equations}
@@ -223,23 +211,25 @@ Which we can possibly get to via $G$ by...multiplying a firm-industry matrix $IK
 \[
 IK = [x_{ik} ]
 \]
-where $x_{ik} = \mathbf{1} \{ \text{firm } i \in \text{industry } k \}$. This is a sparse matrix with one non-zero element per row, and $IK$ is $N \times K$. Then I can possibly get $G^I$ by
-\[
-G^I = IK' \times G \times IK
-\]
-Well, probably not, but something like that. Will probably have to go to actual expenditures, and then normalize, or something.
+where $x_{ik} = \mathbf{1} \{ \text{firm } i \in \text{industry } k \}$. This is a sparse matrix with one non-zero element per row, and $IK$ is $N \times K$. 
+%Then I can possibly get $G^I$ by
+%\[
+%G^I = IK' \times G \times IK
+%\]
+%Well, probably not, but something like that. Will probably have to go to actual expenditures, and then normalize, or something.
 
-
-%Use the implied $A$ and $G$ to solve the equations and see how close it gets. Check sparseness, check network measures, and so on. Does each firm have at least one customer, at least one supplier? Make sure $g_{ii}=0$ somehow?
-
+\begin{gather}
+g^I_{IJ} \sum_{i\in I} s_i = \sum_{j \in J} \sum_{i \in I} s_i g_{ij} \\
+s_I g^I_{IJ} = \sum_{j \in J} \sum_{i \in I} s_i g_{ij} \\
+\sum_{j \in J} \sum_{i \in I} s_i g_{ij} = s_I g^I_{IJ}
+\end{gather}
  
-%Topics: node identification and link prediction in multi-layer networks. Link prediction. Multi-plex networks, multi-layer networks, complex networks. Matching across layers. Node matching across networks / graphs.
+ So some of these are non-zero. Maybe not many. But important bit is that they can go into the first stage. So there are $K^2$ equations here. They only use the parameters $g_{ij}$ (for now---final demand maybe comes later).
+ 
+ Somehow need to multiply the $s_i$ by $g_{ij}$, then aggregate by industries. Which means I need to use $IK$. The left hand side needs to be a matrix that is $K^2 \times (R+N)N$, call it $X_{\text{ind}}$. One row $i'$ of $X_{\text{ind}}$ represents an industry pair $IJ$. It has non-zero entries $s_i$ when the column $j'$ of $X_{ind}$ matches an element of $y$. E.g., if the $j'$-th element of $y$ is $g_{ij}$, then $X_{\text{ind}}(i',j') = s_i$ if $i'=(I,J)$, $i \in I, j \in J$. God.
 
-%Subtitle: application to firm-firm trade network.
-
-
-%\subsection{Algorithm}
-%But, if matrix dense, $E=[1]$, then exact solution can be found, and $|| X - \hat{X} ||_2 =0$. But $\lambda || E ||_1 = \lambda N^2$. So idea is to reduce $E$ as much as possible, but the thing still makes sense. Or, I can ditch the benchmarking altogether, since it should be exact, or at least close. Aka, if it's not close, ditch the solution altogether. How to pick algorithm? Some edge-picking algorithm. But make sure...stuff still works out.
+\section{May have to start looking at other strategies}
+Fix the number of edges first, then try to change it. Idea is to have an lower bound (from STF) on possible edges, and upper bound (from industry IO, others) on number of edges, then solve all at once. Admit that I'll only get large firm links, I think. Yea, that's working better.
 
 \bibliographystyle{chicago}
 \bibliography{inferring-firm-networks-2}

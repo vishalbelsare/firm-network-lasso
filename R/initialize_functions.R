@@ -8,7 +8,7 @@
 # Oct, 2016
 ########################################################################
 
-initialize_fake_s <- function(R,Z,N) {
+initialize_fake_s <- function(R,Z,N,region_density,firm_density) {
 
   # Plant value-added share
   beta <- runif(N,0.1,0.9)
@@ -26,6 +26,13 @@ initialize_fake_s <- function(R,Z,N) {
     # Regional income
   I <- ir %*% (beta * s)
   
+  Er <- rsparsematrix(R,N,density=region_density,rand.x=function(n) 1)
+
+  # Non-zero edges of plant-plant demand matrix
+  # Possibly add services demand to each one that doesn't have a thing.
+  En <- rsparsematrix(N,N,density=firm_density,rand.x=function(n) 1)
+  diag(En[1:N,1:N]) <- 0
+  
   # Return fake data; don't need non-zero edge matrices anymore.
-  return(list(beta=beta,I=I,ir=ir,iz=iz,s=s))
+  return(list(beta=beta,Er=Er,En=En,I=I,ir=ir,iz=iz,s=s))
 }

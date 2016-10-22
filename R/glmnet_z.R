@@ -26,15 +26,36 @@ glmnet_z <- function(z,args) {
   # Save important arguments.
   I <- args$I
   iz <- args$iz
+  Er <- args$Er
+  En <- args$En
   s <- args$s
   R <- args$R
   N <- args$N
+  rm(args)
   
   sz <- s[iz[z,]==1] # select firm sizes from industry z
   cz <- sz # The RHS argument that goes into glmnet.
   
+  Erz <- Er[,iz[z,]==1]
+  Enz <- En[,iz[z,]==1]
   # Number of firms in this industry.
   z_len <- length(sz)
+  
+  penalty <- rbind(Erz,Enz)
+  rm(Er,En)
+  dim(penalty) <- c((R+N)*z_len,1)
+  penalty <- 1 - penalty
+
+  # random penalty.
+  # penalty <- as.integer(rnorm(n=(R+N)*z_len) > 0)
+  
+  # if (FALSE) { # a test.
+  #   dim(penalty) <- c(R+N,z_len)
+  #   erx <- penalty[1:R,1:z_len]
+  #   erx + Erz # all elements should be = 2
+  #   enx <- penalty[(R+1):(R+N),1:z_len]
+  #   enx + Enz # all elements should be = 2
+  # }  
   
   # The market clearing equations; would like to remove s_i from each row i. Could just calculate the relevant
   # position in X_mc and set them all to 0? Should only be N operations.
@@ -42,7 +63,8 @@ glmnet_z <- function(z,args) {
   
   # Estimate elastic net / lasso.
   # Objective: find potential non-zero coefficients.
-  fit <- glmnet(X_mc,sz,alpha=1,nlambda=100,intercept=FALSE,lower.limits=0,upper.limits=1)
+  # Include 0 penalties for links identified in a previous step.
+  fit <- glmnet(X_mc,sz,alpha=0.1,nlambda=100,intercept=FALSE,lower.limits=0,upper.limits=1,penalty.factor=penalty,lambda.min.ratio=0.0001)
   y <- coef(fit)
 
   # pick one with max number of non-zerosz.

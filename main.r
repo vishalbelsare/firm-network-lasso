@@ -8,91 +8,90 @@
 # Oct 18, 2016
 ########################################################################
 
-library(dplyr)
-library(tibble)
-library(Matrix)
-library(stringr)
-library(tidyr)
-library(ggplot2)
-library(glmnet)
+source("R/helpers.R")
+startup()
 
-rm(list=ls(all=TRUE))
-gc()
-
-# Tip from http://jeromyanglim.tumblr.com/post/33418725712/how-to-source-all-r-files-in-a-directory
-sourceDir <- function(path, trace = TRUE, ...) {
-  for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
-    if(trace) cat(nm,":")
-    source(file.path(path, nm), ...)
-    if(trace) cat("\n")
-  }
-}
-
-sourceDir(paste0(getwd(),"/R"))
-
+## Initialize things.
 #set.seed(9) 
-R <- 10
-N <- 250
+R <- 2  # Number of regions
+N <- 20 # Number of firms
+Z <- 2  # Number of industries; each industry must have more than one firm, 
+# or glmnet fails (at least until I add more equations).
+region_density <- 0.5
+firm_density <- 0.25
 
-args <- initialize_fake_s(R,N)
+# Create fake data.
+args <- initialize_fake_s(R=R,Z=Z,N=N,region_density=region_density,firm_density=firm_density)
 
+# Save returned arguments.
+beta <- args$beta
+iz <- args$iz
 I <- args$I[,1]
-s <- args$s
+s <- sinit <- args$s
+Er <- args$Er
+En <- args$En
 
-I_mc <- I %>% t() %>% list() %>%  rep(N) %>% bdiag()
-s_mc <- s %>% t() %>% list() %>%  rep(N) %>% bdiag()
-X_mc <- cbind(I_mc,s_mc)
+## so here try to add in info from Er, En.
+## Get upper and lower bounds working. This is upper. Lower goes into the penalty.
+## Which means: take this one, remove a bunch of links, then get penalty to work.
 
+Erl <- Er %>% summary() %>% tbl_df() %>% sample_frac(size=0.25) %>% df_to_s(dims=c(R,N))
+Enl <- En %>% summary() %>% tbl_df() %>% sample_frac(size=0.25) %>% df_to_s(dims=c(N,N))
+
+lower_bound <- rbind(Erl,Enl)
+upper_bound <- rbind(Er,En)
+rm(Er,En)
+dim(lower_bound) <- c((R+N)*N,1)
+
+z <- c(I,s) 
+erg <- (z %>% to_sdiag()) %*% penalty
+erg <- erg %>% summary() %>% tbl_df()
+X_mc <- lapply(erg %>% split(f=erg$j), function(l) l$x ) %>% bdiag() %>% t()
+rm(erg)
 c_mc <- s
 
-X_ari <- Reduce(cbind, .sparseDiagonal(R) %>% list() %>% rep(N))
-X_gij <- Reduce(cbind, .sparseDiagonal(N) %>% list() %>% rep(N))
+erg2 <- penalty %>% summary() %>% tbl_df()
 
-X <- rbind(X_mc,bdiag(X_ari,X_gij))
+# another way: convert l to sparse diagonal, then elementwise multiply by sparseDiagonal, then remove need to elements errrg.
+X_ag <- Reduce(cbind, lapply(erg2 %>% split(f=erg2$j), function(l) l %>% select(-j) %>% rownames_to_column(var="j") %>% mutate(j=as.integer(j)) %>% df_to_s(dims=c(R+N,dim(l)[1]))))
+rm(erg2)
+gc()
 
-c_ari <- rep_len(1,R)
-c_gij <- 1-args$beta
+c_mc <- s # RHS for market clearing equations
+c_a <- rep_len(1,R) # RHS for rowSums(A) = 1 equations
+c_g <- rep_len(1,N) #1-beta # RHS for rowSums(G) = 1-beta equations.
 
-c <- c(c_mc,c_ari,c_gij)
-
+# Apply it all together.
+c <- c(c_mc,c_a,c_g)
+X <- rbind(X_mc,X_ag)
+rm(X_mc,X_ag)
 # deviance for some reason can go above 100%? I just want it to be as high as possible.
 glmnet.control(devmax = 5) 
 
 # have a lot of lambdas. just want to get as close as possible to the data,
 # don't need to worry about overfitting. it should exactly fit the "training" data.
 #,lower.limits=0,upper.limits=1) <- may or may not need this.
-fit <- glmnet(X,c,alpha=1,nlambda=1000,intercept=FALSE)
+fit <- glmnet(X,c,alpha=1,nlambda=50,intercept=FALSE,lower.limits=0,upper.limits=1,lambda.min.ratio=0.0001)
+y <- coef(fit) # could make this more efficient by calling coef(fit,s="correct lambda here")
+print(fit)
+# xgboost could work if I predict a new value for every one of the million parameters etc. frig that.
+pred <- predict(fit,newx=X,s=c(fit$lambda[50])) # some small lambda.
 
-y <- coef(fit)
-# print(fit$df)
-# print(fit)
-
-# last one is to get rid of intercept index.
-yx <- y %>% summary() %>% tbl_df() %>% filter(j==max(j)) %>% select(-j) %>% mutate(i=i-1) 
-
-# Rearrange y to get A
-y_sa <- yx %>% filter(i<=R*N) %>% mutate(col=floor((i-1)/R)+1,row=i-(col-1)*R)
-A <- sparseMatrix(i=y_sa$row,j=y_sa$col,x=y_sa$x,dims=c(R,N))
-
-# Rearrange y to get G
-y_ga <- yx %>% filter(i>R*N) %>% mutate(i=i-R*N) %>% mutate(col=floor((i-1)/N)+1,row=i-(col-1)*N)
-G <- sparseMatrix(i=y_ga$row,j=y_ga$col,x=y_ga$x,dims=c(N,N))
-
-# Do A and G satisfy the equations? #sx <- solve_s(R,N,list(beta=args$beta,ir=args$ir,A=A,G=G))
-rowSums(A) %>% summary() # pretty far from correct, should all be 1.
-(rowSums(G) + args$beta) %>% summary() # pretty far from correct, should all be 1.
-
-# Solve for implied s
-s_hat <- t(A) %*% (I %>% matrix(nrow=R,ncol=1)) + t(G) %*% (((1-args$beta)*s) %>% matrix(nrow=N,ncol=1)) 
-df <- tibble(s_hat=s_hat[,1],s=s)
-lm(s_hat %>% log() ~ s %>% log(),data=df %>% filter(s_hat>0)) %>% summary()
-ggplot(df %>% filter(s_hat>0),aes(x=s,y=s_hat))+geom_point(alpha=0.5) + scale_x_log10() + scale_y_log10() 
-
-# How sparse are A and G combined?
 nnz <- fit$df[length(fit$df)] / (R*N+N^2)
+rm(fit)
+gc()
+
+s_hat <- pred[1:N,1]
+a_eq <- pred[(N+1):(R+N),1]
+g_eq <- pred[(R+N+1):(R+2*N),1]
+
+# compare pred to c.
+lm(c ~ pred[,1]) %>% summary() # ok...
+a_eq %>% summary()
+g_eq %>% summary()
+df <- tibble(s_hat=s_hat,s=s)
+ggplot(df %>% filter(s_hat>0),aes(x=s,y=s_hat))+geom_point(alpha=0.1) + scale_x_log10() + scale_y_log10()
+ggplot(df %>% rownames_to_column() %>% gather(type,value,s_hat:s) %>% filter(value>0))+stat_density(aes(x=value,colour=type),position="dodge",geom="line") + scale_x_log10()
+# How sparse are A and G combined?
 print(str_c("sparsity: ",nnz))
 
-# How does it do for big firms (> median size).
-q <- quantile(df$s,probs=0.5)
-lm(s_hat %>% log() ~ s %>% log(),data=df %>% filter(df$s > q & s_hat>0)) %>% summary()
-ggplot(df %>% filter(df$s > q & s_hat>0),aes(x=s,y=s_hat))+geom_point(alpha=0.5) + scale_x_log10() + scale_y_log10() 

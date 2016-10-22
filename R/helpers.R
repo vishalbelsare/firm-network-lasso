@@ -20,6 +20,7 @@ load_libraries <- function(inside_parallel=FALSE) {
   # For Lasso.
   library(glmnet)
   
+#  library(xgboost)
   
   if (!inside_parallel) {
     # Tidy packages
@@ -39,7 +40,7 @@ startup <- function() {
   gc()
   
   # Stop on warnings. Much easier for debugging.
-  options(warn = 2)
+#  options(warn = 2)
   
   sourceDir(paste0(getwd(),"/R"))
   
