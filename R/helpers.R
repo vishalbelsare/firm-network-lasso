@@ -34,11 +34,7 @@ load_libraries <- function(inside_parallel=FALSE) {
   }
 }
 startup <- function() {
-  
-  # Clean.
-  rm(list=ls(all=TRUE))
-  gc()
-  
+
   # Stop on warnings. Much easier for debugging.
 #  options(warn = 2)
   
