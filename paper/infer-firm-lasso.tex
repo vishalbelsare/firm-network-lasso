@@ -207,11 +207,11 @@ G^I =
 \end{bmatrix}
 \]
 
-Which we can possibly get to via $G$ by...multiplying a firm-industry matrix $IK$
+Which we can possibly get to via $G$ by...multiplying a firm-industry matrix $K$
 \[
-IK = [x_{ik} ]
+K = [x_{ik} ]
 \]
-where $x_{ik} = \mathbf{1} \{ \text{firm } i \in \text{industry } k \}$. This is a sparse matrix with one non-zero element per row, and $IK$ is $N \times K$. 
+where $x_{ik} = \mathbf{1} \{ \text{firm } i \in \text{industry } k \}$. This is a sparse matrix with one non-zero element per row, and $K$ is $N \times K$. 
 %Then I can possibly get $G^I$ by
 %\[
 %G^I = IK' \times G \times IK
@@ -227,6 +227,9 @@ s_I g^I_{IJ} = \sum_{j \in J} \sum_{i \in I} s_i g_{ij} \\
  So some of these are non-zero. Maybe not many. But important bit is that they can go into the first stage. So there are $K^2$ equations here. They only use the parameters $g_{ij}$ (for now---final demand maybe comes later).
  
  Somehow need to multiply the $s_i$ by $g_{ij}$, then aggregate by industries. Which means I need to use $IK$. The left hand side needs to be a matrix that is $K^2 \times (R+N)N$, call it $X_{\text{ind}}$. One row $i'$ of $X_{\text{ind}}$ represents an industry pair $IJ$. It has non-zero entries $s_i$ when the column $j'$ of $X_{ind}$ matches an element of $y$. E.g., if the $j'$-th element of $y$ is $g_{ij}$, then $X_{\text{ind}}(i',j') = s_i$ if $i'=(I,J)$, $i \in I, j \in J$. God.
+
+
+
 
 \section{May have to start looking at other strategies}
 Fix the number of edges first, then try to change it. Idea is to have an lower bound (from STF) on possible edges, and upper bound (from industry IO, others) on number of edges, then solve all at once. Admit that I'll only get large firm links, I think. Yea, that's working better. Ok, great. But now having issues with variance. Not sure how to deal with that. Accuracy depends on scaling firm sizes, variance. But usually gets the upper distribution correct, not the lower; maybe that means I need to cut the smaller plants off.
