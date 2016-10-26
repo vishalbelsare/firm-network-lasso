@@ -8,6 +8,12 @@
 # Sep 15, 2016
 ########################################################################
 
+rmgc <- function(...,list=character(),pos=-1,envir=as.environment(pos),inherits=FALSE) {
+  dots <- match.call(expand.dots=FALSE)$...
+  rm(dots,list=character(),pos=-1,envir=as.environment(pos),inherits=FALSE)
+  gc()
+}
+
 load_libraries <- function(inside_parallel=FALSE) {
   # Load relevant libraries:
   

@@ -8,7 +8,7 @@
 # Oct, 2016
 ########################################################################
 
-initialize_fake_economy <- function(R,K,N,region_density,firm_density) {
+initialize_fake_economy <- function(R,K,N,region_density,firm_density,scale) {
   
   # Plant value-added share
   beta <- runif(N,0.1,0.9)
@@ -17,8 +17,8 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density) {
   ir <- rbind(tibble(j=1:N,i=sample(1:R,N,replace=TRUE),x=1)) %>% df_to_s(dims=c(R,N))
   
   # Plant's industry, total of J.
-  # iz <- tibble(j=1:N,i=sample(1:Z,N,replace=TRUE),x=1) %>% df_to_s(dims=c(Z,N))
-  ik <- tibble(j=1:N,i=rep(1:K,ceiling(N/K))[1:N],x=1) %>% df_to_s(dims=c(K,N))
+  ik <- tibble(j=1:N,i=sample(1:K,N,replace=TRUE),x=1) %>% df_to_s(dims=c(K,N))
+  # ik <- tibble(j=1:N,i=rep(1:K,ceiling(N/K))[1:N],x=1) %>% df_to_s(dims=c(K,N))
   
   Er <- rsparsematrix(R,N,density=region_density,rand.x=function(n) 1)
   # needs to be at least >=ir
@@ -44,13 +44,10 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density) {
   }
   
   A <- Er
+#  A@x <- rlnorm(length(A@x),0,1) 
   A@x <- runif(length(A@x)) 
   A <- A / rowSums(A)
 
-  Erx <- rsparsematrix(R,N,density=min(region_density*5,1),rand.x=function(n) 1)
-  Er <- Erx + Er
-  Er@x <- rep_len(1,length(Er@x))
-  
   # Non-zero edges of plant-plant demand matrix
   # Possibly add services demand to each one that doesn't have a thing.
   En <- rsparsematrix(N,N,density=firm_density,rand.x=function(n) 1)
@@ -75,17 +72,11 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density) {
     }
     En <- En %>% summary() %>% tbl_df() %>% filter(x>0) %>% df_to_s(dims=c(N,N))
   }
-  
     
   G <- En
+#  G@x <- rlnorm(length(G@x),0,1) 
   G@x <- runif(length(G@x))
   G <- G / rowSums(G)
-  
-  Enx <- rsparsematrix(N,N,density=min(firm_density*5,1),rand.x=function(n) 1)
-  En <- Enx + En
-  En@x <- rep_len(1,length(En@x))
-  
-  
   
   tol <- 1e-5
   obj <- tol + 1
@@ -99,7 +90,22 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density) {
     print(obj)
   }
   s <- v1
-  return(list(A=A,beta=beta,Er=Er,En=En,G=G,I=I,ir=ir,ik=ik,s=s))
+  I <- ir %*% (beta * s)
+  
+  # Scale
+  I <- I/sum(s)*scale
+  s <- s/sum(s)*scale
+  
+  # Industry IO table; should really include region final demand?
+  x <- (((1-beta) * s %>% to_sdiag()) %*% G)  %>% summary() %>% tbl_df() 
+  
+  # merge on industries
+  k <- ik %>% summary() %>% tbl_df() %>% select(k=i,i=j,-x)
+  y <- x %>% left_join(k,by=c("i"="i")) %>% rename(ki=k) %>% left_join(k,by=c("j"="i")) %>% rename(kj=k)
+  kk <- y %>% group_by(ki,kj) %>% summarize(x=sum(x)) %>% rename(i=ki,j=kj) %>% df_to_s(dims=c(K,K))
+  dim(kk) <- c(K*K,1)
+  
+  return(list(A=A,beta=beta,G=G,I=I,ir=ir,ik=ik,kk=kk,s=s))
 }
 
 initialize_fake_s <- function(R,K,N,region_density,firm_density) {
