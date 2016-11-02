@@ -35,10 +35,10 @@ if (fakes) {
   print("Initialize fake data.")
   R <- 20  # Number of regions
   N <- 1000 # Number of firms
-  K <- 25  # Number of industries; each industry must have more than one firm, 
+  K <- 5  # Number of industries; each industry must have more than one firm, 
   # or glmnet fails (at least until I add more equations).
-  region_density <- 0.5
-  firm_density <- 0.05
+  region_density <- 0.05
+  firm_density <- 0.02
   scale <- N
 
 #  args <- initialize_fake_s(R=R,K=K,N=N,region_density=region_density,firm_density=firm_density)
@@ -90,7 +90,11 @@ X_mc <- create_X_mc(I,s,upper_bound)
 c_mc <- s
 
 X_ag <- create_X_ag(upper_bound)
+# X_ag %>% dim()
+# X_ind %>% dim()
+# X_mc %>% dim()
 
+# xxx
 c_mc <- s # RHS for market clearing equations
 c_a <- rep_len(1,R) # RHS for rowSums(A) = 1 equations
 c_g <- rep_len(1,N) #1-beta # RHS for rowSums(G) = 1-beta equations.
@@ -105,9 +109,8 @@ glmnet.control(devmax = 5)
 
 nlambda <- 100
 
-
 # fit; returns coefs, and prediction.
-fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-10)
+system.time(fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-2))
 
 # do analysis.
 
@@ -146,11 +149,20 @@ lm(c_ind ~ fit$pred[(R+2*N+1):(R+2*N+K^2),1]) %>% summary() # ok...
 
 fit$pred[(N+1):(R+N),1] %>% summary()
 fit$pred[(R+N+1):(R+2*N),1] %>% summary()
-ggplot() + geom_point(aes(x=c_ind,y=fit$pred[(R+2*N+1):(R+2*N+K^2),1]))
-
-
+ggplot() + geom_point(aes(x=c_ind,y=fit$pred[(R+2*N+1):(R+2*N+K^2),1])) #+ 
+#  scale_x_log10() + scale_y_log10()
 
 xxx
+  
+  X <- G %>% summary() %>% tbl_df() %>% filter(x>0.26) %>% df_to_s(dims=dim(G))
+  X@x <- rep_len(1,length(X@x))
+  library(igraph)
+## uhh, so use A, G to do stuff?
+  x <- graph_from_adjacency_matrix(adjmatrix=X, mode = c("directed"), weighted = NULL, diag = TRUE,add.colnames = NULL, add.rownames = NA)
+  
+  co <- layout_with_fr(x)
+  co[1,]
+  plot(x, layout=co, vertex.color="black", vertex.size=1.75, edge.color="grey50", edge.arrow.size=0.05, vertex.label=NA) 
 
 # s_hat <- pred[1:N,1]
 # # s_hat_p <- pred_p[1:N,1]

@@ -44,8 +44,8 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density,scale) {
   }
   
   A <- Er
-#  A@x <- rlnorm(length(A@x),0,1) 
-  A@x <- runif(length(A@x)) 
+  A@x <- rlnorm(length(A@x),0,1) 
+  # A@x <- runif(length(A@x)) 
   A <- A / rowSums(A)
 
   # Non-zero edges of plant-plant demand matrix
@@ -74,8 +74,8 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density,scale) {
   }
     
   G <- En
-#  G@x <- rlnorm(length(G@x),0,1) 
-  G@x <- runif(length(G@x))
+  G@x <- rlnorm(length(G@x),0,1) 
+#  G@x <- runif(length(G@x))
   G <- G / rowSums(G)
   
   tol <- 1e-5

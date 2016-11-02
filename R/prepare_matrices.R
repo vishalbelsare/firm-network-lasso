@@ -25,29 +25,29 @@ create_X_ag <- function(upper_bound) {
     l %>% select(-j) %>% rownames_to_column(var="j") %>% mutate(j=as.integer(j)) %>% df_to_s(dims=c(R+N,dim(l)[1]))
   })
 
-  X_ag <- erg3[[1]]
-  for (i in seq_along(erg3[-1])) {
-    X_ag <- cbind(X_ag, erg3[[i+1]])
-  }
-  
+  X_ag <- c_binder(erg3)
+
   return(X_ag)
 }
 
 c_binder <- function(l) {
-  N <- length(zz)
+  N <- length(l)
 
   # recursively call lapply on half the list? no, too many.
   # divide into sqrt(N) lists of sqrt(N), plus leftovers.
-  NN <- floor(sqrt(N))
+  NN <- floor(N^(1/2))
   leftovers <- N-NN^2
-  
+
   g <- function(i,zz) {
-    cbind(zz[])
+    do.call(cbind,zz[(NN*(i-1)+1):(NN*i)] %>% unlist())
   }
   
-  lapply(1:NN,g,zz=zz)
-    
-  
+  zzz <- lapply(1:NN,g,zz=l)
+  if (leftovers>0) {
+    zzz <- list(zzz,l[(NN^2+1):N])
+  }
+  zzzz <- do.call(cbind,zzz %>% unlist())
+  return(zzzz)
 }
 
 create_X_ind <- function(s, upper_bound, ik) {
@@ -71,10 +71,11 @@ create_X_ind <- function(s, upper_bound, ik) {
   }
   zz <- lapply(1:N,f,y=y)
   
-  X_ind <- zz[[1]]
-  for (i in seq_along(zz[-1])) {
-    X_ind <- cbind(X_ind, zz[[i+1]])
-  }
+  # X_ind <- zz[[1]]
+  # for (i in seq_along(zz[-1])) {
+  #   X_ind <- cbind(X_ind, zz[[i+1]])
+  # }
+  X_ind <- c_binder(zz)
 
   return(X_ind)
 }

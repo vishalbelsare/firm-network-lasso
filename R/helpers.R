@@ -20,14 +20,16 @@ load_libraries <- function(inside_parallel=FALSE) {
   # For sparse matrices
   library(Matrix)
   
-  # Tidy packages
-  library(dplyr)
-  
+  # # Tidy packages
+  # library(dplyr)
+  # 
+  # # To load data.
+  # library(readr)
+  library(tidyverse)
+    
   # For Lasso.
   library(glmnet)
   
-  # To load data.
-  library(readr)
   
 #  library(xgboost)
   
