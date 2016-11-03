@@ -87,7 +87,7 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density,scale) {
     v1 <- t(A) %*% I + t(G) %*% (((1-beta) * v0) %>% matrix(nrow=N,ncol=1))
     v1 <- v1 / sum(v1)
     obj <- sqrt(sum((v1-v0)^2))
-    print(obj)
+    # print(obj)
   }
   s <- v1
   I <- ir %*% (beta * s)
