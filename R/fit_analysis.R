@@ -25,7 +25,7 @@ fit_glmnet <- function(X,c,alpha=1,nlambda=100,lambda.min.ratio=1e-5,penalty=rep
   return(list(coefs=coefs,pred=pred))
 }
 
-predicted_matrices <- function(R,N,fit,nonzero_vars) {
+predicted_matrices <- function(fit,R,N,nonzero_vars) {
   yx <- fit$coefs %>% left_join(nonzero_vars,by=c("i"="i_hat")) %>% select(-i,i=i_original) %>% df_to_s(dims=c((R+N)*N,1))
   
   # y---first R are a_{.1}, next N are g_{.1}, etc. so split by R+N.
@@ -41,7 +41,7 @@ predicted_matrices <- function(R,N,fit,nonzero_vars) {
   return(list(A_hat=A_hat,G_hat=G_hat))
 }
 
-predicted_rhs <- function(R=R,N=N,fit) {
+predicted_rhs <- function(fit,R,N) {
   # divided up like --- 1:N, (N+1):(R+2*N), (R+2*N+1):(R+2*N+K^2)
 
   c_mc_hat <- fit$pred[1:N,1] # predicted sizes
@@ -60,21 +60,24 @@ fit_summary <- function(predicted_rhs,c_mc,c_a,c_g,c_ind) {
   print("Firm size accuracy / market clearing equations")
   lm(c_mc ~ predicted_rhs$c_mc_hat) %>% summary() %>% print()
 
+  print("Normalization equations")
+  lm(c(c_a,c_g) ~ c(predicted_rhs$c_a_hat,predicted_rhs$c_g_hat)) %>% summary() %>% print()
+  
+  
   print("Industry expenditure equations")
   lm(c_ind ~ predicted_rhs$c_ind_hat) %>% summary() # ok...
 }
 
-sparsity <- function(fit,fake=FALSE) {
+sparsity <- function(fit,A_hat=NULL,G_hat=NULL) {
   # print nnz, etc etc.  
-  # only useful for fake data.
   # well, not really.
+
+  nnz <- fit$coefs %>% length() / (R*N + N*N)
   
-  # nnz, nnz lb.
-  
-  if (fake) {
-    sprintf("sparsity: %.5f, lower_bound: %.5f, actual: %.5f",nnz,nnzp,(length(A@x)+length(G@x))/(R*N+N^2))
+  if (!is.null(A_hat) & !is.null(G_hat)) {
+    sprintf("sparsity: %.5f, actual: %.5f",nnz,(length(A@x)+length(G@x))/(R*N+N^2))
   } else {
-    sprintf("sparsity: %.5f, lower_bound: %.5f, actual: %.5f",nnz,nnzp)
+    sprintf("sparsity: %.5f",nnz)
   }
 }
 
@@ -110,6 +113,31 @@ sensitivity_specificity <- function(M, Mhat) {
   sprintf("sensitivity: %.5f, specificity: %.5f, positive predictive value: %.5f",sensitivity,specificity,positive_predictive)
   
   return(list(true_zeros=true_zeros,true_nonzeros=true_nonzeros,false_zeros=false_zeros,false_nonzeros=false_nonzeros,sensitivity=sensitivity,specificity=specificity,positive_predictive=positive_predictive))
+}
+
+plot_rhs <- function(prhs,var,log=FALSE) {
+  if (var=="mc") {
+    lab="Firm output"
+  } else if (var=="ind") {
+    lab="Industry pair exp."
+  } else if (var=="a") {
+    lab="Region expenditure"
+  } else if (var=="g") {
+    lab="Firm expenditure"
+  }
+  
+  x <- str_c("c_",var) %>% as.name() %>% eval()
+  y <- prhs[[str_c("c_",var,"_hat")]]
+
+  p <- ggplot() + geom_point(aes(
+    x=x,
+    y=y
+  )) + labs(x=lab,y=str_c("Predicted ", lab))
+  if (log) {
+    lab <- str_c(lab," (log scale)")
+    p <- p + scale_x_log10() + scale_y_log10() + labs(x=lab,y=str_c("Predicted ", lab))
+  }
+  plot(p)
 }
 
 # Figures:

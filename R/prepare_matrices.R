@@ -7,37 +7,14 @@
 # Oct 18, 2016
 ########################################################################
 
-create_X_mc <- function(I,s,upper_bound) {
-  z <- c(I,s)
-  erg <- (z %>% to_sdiag()) %*% upper_bound
-  erg <- erg %>% summary() %>% tbl_df()
-  X_mc <- lapply(erg %>% split(f=erg$j), function(l) l$x ) %>% bdiag() %>% t()
-  return(X_mc)
-}
-
-create_X_ag <- function(upper_bound) {
-  dims <- dim(upper_bound)
-  N <- dims[2]
-  R <- dims[1] - N
-  
-  erg2 <- upper_bound %>% summary() %>% tbl_df()
-  erg3 <- lapply(erg2 %>% split(f=erg2$j), function(l) {
-    l %>% select(-j) %>% rownames_to_column(var="j") %>% mutate(j=as.integer(j)) %>% df_to_s(dims=c(R+N,dim(l)[1]))
-  })
-
-  X_ag <- c_binder(erg3)
-
-  return(X_ag)
-}
-
 c_binder <- function(l) {
   N <- length(l)
-
+  
   # recursively call lapply on half the list? no, too many.
   # divide into sqrt(N) lists of sqrt(N), plus leftovers.
   NN <- floor(N^(1/2))
   leftovers <- N-NN^2
-
+  
   g <- function(i,zz) {
     do.call(cbind,zz[(NN*(i-1)+1):(NN*i)] %>% unlist())
   }
@@ -48,6 +25,35 @@ c_binder <- function(l) {
   }
   zzzz <- do.call(cbind,zzz %>% unlist())
   return(zzzz)
+}
+
+create_X_mc <- function(I,s,upper_bound) {
+  z <- c(I,s)
+  w <- (z %>% to_sdiag()) %*% upper_bound
+  w <- w %>% summary() %>% tbl_df()
+  X_mc <- lapply(w %>% split(f=w$j), function(l) l$x ) %>% bdiag() %>% t()
+  return(X_mc)
+}
+
+create_X_ag <- function(I,s,upper_bound) {
+  dims <- dim(upper_bound)
+  N <- dims[2]
+  R <- dims[1] - N
+  
+  x <- (c(I,s) %>% to_sdiag()) %*% upper_bound
+  
+  x_df <- x %>% summary() %>% tbl_df()
+  x_list <- lapply(x_df %>% split(f=x_df$j), function(l) {
+    l %>% select(-j) %>% # remove the column id.
+      rownames_to_column(var="j") %>% # add new column ids that represent the parameters
+      mutate(j=as.integer(j)) %>%
+      df_to_s(dims=c(R+N,dim(l)[1])) # make matrix (R+N)x(nnz parameters for firm/original column id `j`)
+  })
+  rmgc(x_df)
+  X_ag <- c_binder(x_list)
+  rmgc(x_list)
+  
+  return(X_ag)
 }
 
 create_X_ind <- function(s, upper_bound, ik) {
@@ -71,10 +77,6 @@ create_X_ind <- function(s, upper_bound, ik) {
   }
   zz <- lapply(1:N,f,y=y)
   
-  # X_ind <- zz[[1]]
-  # for (i in seq_along(zz[-1])) {
-  #   X_ind <- cbind(X_ind, zz[[i+1]])
-  # }
   X_ind <- c_binder(zz)
 
   return(X_ind)
