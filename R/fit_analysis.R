@@ -8,7 +8,7 @@
 ########################################################################
 
 fit_glmnet <- function(X,c,alpha=1,nlambda=100,lambda.min.ratio=1e-5,penalty=rep_len(1,dim(X)[2])) {
-  fit <- glmnet(X,c,alpha=1,nlambda=nlambda,intercept=FALSE,lower.limits=0,upper.limits=1,lambda.min.ratio=lambda.min.ratio)
+  fit <- glmnet(X,c,alpha=1,nlambda=nlambda,intercept=FALSE,lower.limits=0,upper.limits=1,lambda.min.ratio=lambda.min.ratio,penalty=penalty)
   
   # pick last iteration.
   t = min(length(fit$df),nlambda)
@@ -20,7 +20,6 @@ fit_glmnet <- function(X,c,alpha=1,nlambda=100,lambda.min.ratio=1e-5,penalty=rep
   coefs <- y %>% summary() %>% tbl_df() %>% 
     filter(j==t) %>% # take the last iteration from glmnet
     mutate(i=i-1,j=1) # remove intercept row (i=i-1), and add a column so I can convert to matrix (j=1)
-  
   
   return(list(coefs=coefs,pred=pred))
 }
@@ -60,21 +59,23 @@ fit_summary <- function(predicted_rhs,c_mc,c_a,c_g,c_ind) {
   print("Firm size accuracy / market clearing equations")
   lm(c_mc ~ predicted_rhs$c_mc_hat) %>% summary() %>% print()
 
-  print("Normalization equations")
-  lm(c(c_a,c_g) ~ c(predicted_rhs$c_a_hat,predicted_rhs$c_g_hat)) %>% summary() %>% print()
+  print("Normalization equations, A")
+  lm(c_a ~ predicted_rhs$c_a_hat) %>% summary() %>% print()
   
-  
+  print("Normalization equations, G")
+  lm(c_g ~ predicted_rhs$c_g_hat) %>% summary() %>% print()
+
   print("Industry expenditure equations")
-  lm(c_ind ~ predicted_rhs$c_ind_hat) %>% summary() # ok...
+  lm(c_ind ~ predicted_rhs$c_ind_hat) %>% summary() %>% print() 
 }
 
-sparsity <- function(fit,A_hat=NULL,G_hat=NULL) {
+sparsity <- function(fit,A=NULL,G=NULL) {
   # print nnz, etc etc.  
   # well, not really.
 
-  nnz <- fit$coefs %>% length() / (R*N + N*N)
+  nnz <- dim(fit$coefs)[1] / (R*N + N*N)
   
-  if (!is.null(A_hat) & !is.null(G_hat)) {
+  if (!is.null(A) & !is.null(G)) {
     sprintf("sparsity: %.5f, actual: %.5f",nnz,(length(A@x)+length(G@x))/(R*N+N^2))
   } else {
     sprintf("sparsity: %.5f",nnz)

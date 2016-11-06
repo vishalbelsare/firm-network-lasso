@@ -24,11 +24,11 @@ fakes <- TRUE
 if (fakes) {
   print("Initialize fake data.")
   R <- 20  # Number of regions
-  N <- 1000 # Number of firms
-  K <- 5  # Number of industries; each industry must have more than one firm, 
+  N <- 1500 # Number of firms
+  K <- 10  # Number of industries; each industry must have more than one firm, 
   # or glmnet fails (at least until I add more equations).
-  region_density <- 0.25
-  firm_density <- 0.05
+  region_density <- 0.05
+  firm_density <- 0.01
   scale <- N
 
 #  args <- initialize_fake_s(R=R,K=K,N=N,region_density=region_density,firm_density=firm_density)
@@ -48,7 +48,7 @@ s <- args$s[,1]
 upper_bound <- upper_bound(args$A,args$G,region_density,firm_density) 
 
 # Lower bound is a sub-sample of true data A and G.
-lower_bound <- lower_bound(args$A,args$G,region_sample_frac=1,firm_sample_frac=1)
+lower_bound <- lower_bound(args$A,args$G,region_sample_frac=0.5,firm_sample_frac=0.1)
 
 x <- upper_bound
 dim(x) <- c((R+N)*N,1)
@@ -62,7 +62,7 @@ nonzero_vars <- x %>% summary() %>%
 dim(lower_bound) <- c((R+N)*N,1)
 x <- cbind(x,lower_bound)
 rmgc(lower_bound)
-penalty <- 1 - x[rowSums(x)>0,2]
+penalty <- 1 - 0.01*x[rowSums(x)>0,2] # next, gonna try to change this to re-weight up firm expenditure relative to region expenditure (e.g., R/N or something)
 rmgc(x,lower_bound)
 
 ## instead: should create that in X_ind. can calculate hmm...
@@ -76,7 +76,7 @@ X_ag <- create_X_ag(I,s,upper_bound)
 
 c_mc <- s # RHS for market clearing equations
 c_a <- I #rep_len(1,R) # RHS for rowSums(A) = 1 equations
-c_g <- s #rep_len(1,N) #1-beta # RHS for rowSums(G) = 1-beta equations.
+c_g <- (1-args$beta)*s #rep_len(1,N) #1-beta # RHS for rowSums(G) = 1-beta equations.
 c_ind <- kk[,1]
 
 # Apply it all together.
@@ -90,29 +90,57 @@ glmnet.control(devmax = 5)
 nlambda <- 100
 
 # fit; returns coefs, and prediction.
-fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-2)
+# fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-12)
+# DANG. PENALTY WORKS PERFECTLY IF YOU GET EDGES RIGHT. well, positive predictive value is ~100%,
+# still only 50% sensitivity.
 
+# Try penalty with different for R and N. should be able to use upper_bound for that.
+# penalty <- c(rep_len(1,R),rep_len(0.01,N)) %>% to_sdiag() %*% upper_bound
+penalty <- c(I^(0.5),s^(0.025)) %>% to_sdiag() %*% upper_bound
+dim(penalty) <- c(R*N+N^2,1)
+penalty <- penalty[rowSums(penalty)>0,1]
+
+# fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-2)
+fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-2,penalty=penalty)
 pm <- fit %>% predicted_matrices(R=R,N=N,nonzero_vars=nonzero_vars)
+
+# another thing to try. do a first run. then do another run, but exclude all firm parameters?
+# rgh <- rowSums(pm$G_hat) + args$beta
+# rowSums(pm$A_hat) %>% summary()
+# rgh %>% summary()
+# ggplot() + geom_point(aes(x=s,y=rgh)) + scale_x_log10()
 
 prhs <- fit %>% predicted_rhs(R=R,N=N)
 
-plot_rhs(prhs,var="mc",log=TRUE)
-plot_rhs(prhs,var="g",log=FALSE)
+plot_rhs(prhs,var="mc",log=TRUE) # so output is all correct
+plot_rhs(prhs,var="g",log=FALSE) # but some firm-firm expenditure is zero,
+# which means...they don't have any inputs? that's wrong, obviously. how can I put that into the model?
+# but the ones that are small are all the smallest possible. weird. the rank is preserved
+# but they're all too low.
+plot_rhs(prhs,var="a",log=FALSE)
+plot_rhs(prhs,var="ind",log=FALSE)
 
 # so doing output better than expenditure. not sure why. 
 # Penalizing firm expenditures less, I think.
-# 
 
 # Plot graph.
 # plot_graph(G=G,edge_val_lower_bound=0.5)
 
-# NOW WORK ON INDUSTRY STUFF
-# THEN TEST SOLUTIONS ETC, I THINK.
-
 fit_summary(prhs,c_mc,c_a,c_g,c_ind)
 
 # Specificity, sensitivity.
-sensitivity_specificity <- sensitivity_specificity(args$G,pm$G_hat) # input true and estimated matrices.
+sensitivity_specificity(args$G,pm$G_hat) # input true and estimated matrices.
 
-sparsity <- sparsity(fit)
+sparsity(fit)
+sparsity(fit,args$A,args$G)
 
+# Q: region expenditures vs. firm expenditures? 
+
+# plot rowSums(G) vs. total size?
+# and percentage difference.
+rah <- rowSums(pm$A_hat)
+rgh <- rowSums(pm$G_hat)+args$beta
+rah %>% summary()
+rgh %>% summary()
+ggplot() + geom_point(aes(x=I,y=rah)) + scale_x_log10()
+ggplot() + geom_point(aes(x=s,y=rgh)) + scale_x_log10()

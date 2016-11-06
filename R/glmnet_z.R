@@ -11,11 +11,14 @@
 
 
 glmnet_z <- function(z,args) {
+# Apply glmnet, return coefficients from specific lambda. 
   
+  # This for parallel on windows; it operates in new environment, doesn't have any of package information.
   # May have to change this if new environment doesn't know the package working directory
   dir <- getwd()
   
   # Get helper functions (including load_libraries())
+  # This for parallel on windows; it operates in new environment, doesn't have any of package information.
   source(paste0(dir,"/R/helpers.R"))
   load_libraries(inside_parallel=TRUE)
   
@@ -31,7 +34,7 @@ glmnet_z <- function(z,args) {
   s <- args$s
   R <- args$R
   N <- args$N
-  rm(args)
+  rmgc(args)
   
   sz <- s[iz[z,]==1] # select firm sizes from industry z
   cz <- sz # The RHS argument that goes into glmnet.

@@ -64,7 +64,7 @@ X_{mc} =
 \end{bmatrix}
 \]
 
-Then $X$ has dimensions $N \times (R+N)N$ (this may be a problem later---it's sparse but still has exactly $(R+N)N$ non-zero entries, which is too many if $N$ is any economically reasonable number). $mc$ stands for market clearing, and represents Equation \eqref{eq:mc}.
+Then $X_mc$ has dimensions $N \times (R+N)N$ (this may be a problem later---it's sparse but still has exactly $(R+N)N$ non-zero entries, which is too many if $N$ is any economically reasonable number). $mc$ stands for market clearing, and represents Equation \eqref{eq:mc}.
 
 There are also $R+N$ equations that require the expenditure shares add up to 1.
 
@@ -113,7 +113,7 @@ c =
 \begin{bmatrix}
 s \\
 1_R \\
-1-\beta
+1 \\
 \end{bmatrix}
 \]
 
@@ -228,7 +228,7 @@ s_I g^I_{IJ} = \sum_{j \in J} \sum_{i \in I} s_i g_{ij} \\
  
  Somehow need to multiply the $s_i$ by $g_{ij}$, then aggregate by industries. Which means I need to use $IK$. The left hand side needs to be a matrix that is $K^2 \times (R+N)N$, call it $X_{\text{ind}}$. One row $i'$ of $X_{\text{ind}}$ represents an industry pair $IJ$. It has non-zero entries $s_i$ when the column $j'$ of $X_{ind}$ matches an element of $y$. E.g., if the $j'$-th element of $y$ is $g_{ij}$, then $X_{\text{ind}}(i',j') = s_i$ if $i'=(I,J)$, $i \in I, j \in J$. God.
 
-
+Add 
 
 
 \section{May have to start looking at other strategies}
