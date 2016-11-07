@@ -97,7 +97,7 @@ initialize_fake_economy <- function(R,K,N,region_density,firm_density,scale) {
   s <- s/sum(s)*scale
   
   # Industry IO table; should really include region final demand?
-  x <- (((1-beta) * s %>% to_sdiag()) %*% G)  %>% summary() %>% tbl_df() 
+  x <- ((((1-beta)*s) %>% to_sdiag()) %*% G)  %>% summary() %>% tbl_df() 
   
   # merge on industries
   k <- ik %>% summary() %>% tbl_df() %>% select(k=i,i=j,-x)

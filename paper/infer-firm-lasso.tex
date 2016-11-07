@@ -1,25 +1,14 @@
-\documentclass[11pt]{article}
-%\usepackage[margin=1.25in]{geometry}                % See geometry.pdf to learn the layout options. There are lots.
-%\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
-%\geometry{landscape}                % Activate for for rotated page geometry
-%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
-%\usepackage{natbib}
+\documentclass[12pt]{article}
+%\usepackage[margin=1.25in]{geometry}                % See geometry.pdf to learn the layout 
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{epstopdf}
 \usepackage{hyperref}
 \usepackage{setspace}
 \usepackage{natbib}
-%\usepackage{verbatim}
-
-%\usepackage{pslatex}
-%\usepackage{fullpage}
-\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
-
+\usepackage{booktabs}
 \usepackage{amsmath}
-
-\newtheorem{definition}{Definition}
-\newcommand{\mydef}[1]{\begin{definition}#1\end{definition}}
+\usepackage{caption}
 
 \begin{document}
 \title{Inferring Unobserved Firm Networks}
@@ -41,26 +30,26 @@ Use data and machine learning to infer unobserved firm-firm trading networks. Gi
 
 The first set of equations to match is 
 \begin{gather}
-\sum_{r=1}^R M_r a_{ri} + \sum_{j=1}^N s_j g_{ji} = s_i , \quad i = 1,\ldots, N
+\sum_{r=1}^R M_r a_{ri} + \sum_{j=1}^N (1-\beta_j) s_j g_{ji} = s_i , \quad i = 1,\ldots, N
 \end{gather}
 Which I rewrite as (and add important other restrictions)
 \begin{gather}
 \label{eq:mc}
-M \cdot a_{\cdot i} + s \cdot g_{\cdot i} = s_i, \quad i = 1,\ldots, N \\
+M \cdot a_{\cdot i} + (1-\beta) s \cdot g_{\cdot i} = s_i, \quad i = 1,\ldots, N \\
 a_{ri} \geq 0, \quad a_{ri} - 1 \leq 0 \\
 g_{ij} \geq 0, \quad g_{ij} - 1\leq 0 \\
 g_{ii} = 0 \\
 \sum_{i \in N} a_{ri} = 1 \label{eq:rowsuma}\\
-\sum_{j \in N} g_{ij} = 1-\beta_i\label{eq:rowsumg}
+\sum_{j \in N} g_{ij} = 1\label{eq:rowsumg}
 \end{gather}
 
 \[
 X_{mc} = 
 \begin{bmatrix}
-    M & s &  0 & 0 & \dots  & 0 & 0\\
-    0 & 0 & M & s &\dots  & 0 & 0 \\
+    M & (1-\beta) s &  0 & 0 & \dots  & 0 & 0\\
+    0 & 0 & M & (1-\beta) s &\dots  & 0 & 0 \\
     \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots  \\
-    0 & 0 & 0 & 0 & \dots  & M & s
+    0 & 0 & 0 & 0 & \dots  & M & (1-\beta) s
 \end{bmatrix}
 \]
 
@@ -113,7 +102,7 @@ c =
 \begin{bmatrix}
 s \\
 1_R \\
-1 \\
+1 -\beta \\
 \end{bmatrix}
 \]
 
@@ -173,39 +162,19 @@ This is an underdetermined system, since the number of variables is much more th
 
 Now use \texttt{glmnet} to solve this problem. Simulation testing: set $R$, $N$, set , draw random $\beta_i$ and $s_i$, random firm locations $r_i$, calculate regional income $I_r = \sum_{i \in r} \beta_i s_i$, then construct $X$ and $c$, then run glmnet for different $R,N$, skewness in $s$ and so on. See if anything works.
 
-\section{First try}
-
-It's not bad. If not sparse, everything looks pretty great, every equation is satisfied or close to it. When it's sparse (say 5\%), the sizes aren't terrible (0.9 $R^2$ for non-zero predicted sizes, and 0.99 $R^2$ for firms above the median). Rank is almost always preserved, but the bottom of the distribution curves disastrously. The other problem: the sum equations \eqref{eq:rowsuma} and \eqref{eq:rowsumg} don't seem to hold ever.  One solution might be post-processing of the $A$ and $G$.
-
-\section{Next up}
-
-To solve the dimensionality problem, the idea is to solve the problem
-\begin{gather}
-\min_y || X y - c||_{\ell 2} + \lambda || y ||_{\ell 1}
-\end{gather}
-
-By industry?
-\begin{gather}
-\min_{y} || X_{i \cdot} y - c_i || + \lambda || y ||_{\ell 1} 
-\end{gather}
-
-So solve this problem for each industry $k$; there's $(R+N) | k | $ unknowns and one equation. So solve these problems, then use the non-zero coefficients to reduce the dimension of $X$, $y$ and $c$ in the main problem.
-
-This may only work if I had industry $\times$ industry conditions inside each glmnet industry call. Otherwise it won't come close to matching the row sum equations later.
-
-
 \section{Add industry equations}
 
-Each firm $i$ now has an industry $k$. An industry intermediate IO table looks like
-\[
-G^I =
-\begin{bmatrix}
-    g^I_{11} & g^I_{12} &\dots  & g^I_{1K}  \\
-    g^I_{21} & g^I_{22}  &\dots  & g^I_{2K} \\
-    \vdots & \vdots & \ddots & \vdots \\
-    g^I_{K1} & g^I_{K2} & \dots  &  g^I_{KK}
-\end{bmatrix}
-\]
+Each firm $i$ now has an industry $k$. 
+%An industry intermediate IO table looks like
+%\[
+%G^I =
+%\begin{bmatrix}
+%    g^I_{11} & g^I_{12} &\dots  & g^I_{1K}  \\
+%    g^I_{21} & g^I_{22}  &\dots  & g^I_{2K} \\
+%    \vdots & \vdots & \ddots & \vdots \\
+%    g^I_{K1} & g^I_{K2} & \dots  &  g^I_{KK}
+%\end{bmatrix}
+%\]
 
 Which we can possibly get to via $G$ by...multiplying a firm-industry matrix $K$
 \[
@@ -219,20 +188,116 @@ where $x_{ik} = \mathbf{1} \{ \text{firm } i \in \text{industry } k \}$. This is
 %Well, probably not, but something like that. Will probably have to go to actual expenditures, and then normalize, or something.
 
 \begin{gather}
-g^I_{IJ} \sum_{i\in I} s_i = \sum_{j \in J} \sum_{i \in I} s_i g_{ij} \\
-s_I g^I_{IJ} = \sum_{j \in J} \sum_{i \in I} s_i g_{ij} \\
-\sum_{j \in J} \sum_{i \in I} s_i g_{ij} = s_I g^I_{IJ}
+\sum_{j \in k'} \sum_{i \in k} (1-\beta_i) s_i g_{ij} = x_{kk'}
+%g^I_{IJ} \sum_{i\in I} (1-\beta_i) s_i = \sum_{j \in J} \sum_{i \in I} (1-\beta_i) s_i g_{ij} \\
+%s_I g^I_{IJ} = \sum_{j \in J} \sum_{i \in I} (1-\beta_i) s_i g_{ij} \\
+%\sum_{j \in J} \sum_{i \in I} (1-\beta_i) s_i g_{ij} = s_I g^I_{IJ}
 \end{gather}
  
  So some of these are non-zero. Maybe not many. But important bit is that they can go into the first stage. So there are $K^2$ equations here. They only use the parameters $g_{ij}$ (for now---final demand maybe comes later).
  
- Somehow need to multiply the $s_i$ by $g_{ij}$, then aggregate by industries. Which means I need to use $IK$. The left hand side needs to be a matrix that is $K^2 \times (R+N)N$, call it $X_{\text{ind}}$. One row $i'$ of $X_{\text{ind}}$ represents an industry pair $IJ$. It has non-zero entries $s_i$ when the column $j'$ of $X_{ind}$ matches an element of $y$. E.g., if the $j'$-th element of $y$ is $g_{ij}$, then $X_{\text{ind}}(i',j') = s_i$ if $i'=(I,J)$, $i \in I, j \in J$. God.
+ Somehow need to multiply the $s_i$ by $g_{ij}$, then aggregate by industries. Which means I need to use $IK$. The left hand side needs to be a matrix that is $K^2 \times (R+N)N$, call it $X_{\text{ind}}$. One row $i'$ of $X_{\text{ind}}$ represents an industry pair $IJ$. It has non-zero entries $s_i$ when the column $j'$ of $X_{ind}$ matches an element of $y$. E.g., if the $j'$-th element of $y$ is $g_{ij}$, then $X_{\text{ind}}(i',j') = s_i$ if $i'=(k,k')$, $i \in k, j \in k'$. \emph{If} the firms are sorted by industries, it looks like
 
-Add 
+\[
+X_{ind} =
+\begin{bmatrix}
+    0  & s &  0 & 0 &\dots  &  0 & 0 \\
+    0 & 0  & 0 &  s & \dots  & 0 & 0 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0  & 0 & 0  & \dots  &  0 & s
+\end{bmatrix}
+\]
 
+In the program / code, the idea is to take the a firm-firm matrix and reshape it using industry information into a matrix that is $K^2 \times (R+N)N$, where each row represents an industry pair. 
 
-\section{May have to start looking at other strategies}
-Fix the number of edges first, then try to change it. Idea is to have an lower bound (from STF) on possible edges, and upper bound (from industry IO, others) on number of edges, then solve all at once. Admit that I'll only get large firm links, I think. Yea, that's working better. Ok, great. But now having issues with variance. Not sure how to deal with that. Accuracy depends on scaling firm sizes, variance. But usually gets the upper distribution correct, not the lower; maybe that means I need to cut the smaller plants off.
+%First, for a given industry pair $(k,k')$, look at a firm $j$ in $k'$. 
+Write a dataset where each observation has two firms $i$ and $j$, their indutries $k_i$ and $k_j$, and the input firm's expenditure $(1-\beta_i) s_i$.  For each producer $j$, convert this dataframe into a matrix with the following rule:
+
+\begin{verbatim}
+z_j <- with(q, sparseMatrix(i=((ki-1)*K+kj),j=i,x=x,dims=c(K^2,N)))
+\end{verbatim}
+
+Then the full matrix is
+\[
+X_{ind} =
+\begin{bmatrix}
+    0  & z_1 &  0 & z_2 &\dots  &  0 & z_N 
+\end{bmatrix}
+\]
+where the 0s are $K^2 \times R$ zero matrices, which will be replaced later when I add in regional final demand expenditures by industry (if I can work that out). Each $z_j$ is $K^2 \times N$, which makes the whole thing $K^2 \times (R+N)N$. Write the RHS of this equation as
+
+\[
+c_{ind} = ( x_{11} , x_{12} , \dots , x_{1K}, x_{21}, \dots, x_{KK} )
+\]
+
+\[
+X = 
+\begin{bmatrix}
+X_{mc} \\
+X_{ag} \\
+X_{ind}
+\end{bmatrix}
+\]
+
+And 
+\[
+c = 
+\begin{bmatrix}
+s \\
+1_R \\
+1 -\beta \\
+c_{ind}
+\end{bmatrix}
+\]
+
+\section{Extra details}
+Since it's matching levels, it's more likely to get the equations with large RHS values correct. E.g., $s$ instead of $1_R$. But it depends on scaling. So, it works better if I use $M$ instead of $1_R$, and $(1-\beta)s$ instead of $(1-\beta)$. In addition, I can rescale the importance of certain equations by using penalties that depend on $M$ and $s$.
+
+\section{Evaluation}
+
+How well does it match the equations? I can graph the 
+
+% Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+% Date and time: Sun, Nov 06, 2016 - 20:11:38
+% Requires LaTeX packages: dcolumn 
+% Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+% Date and time: Sun, Nov 06, 2016 - 20:22:54
+\begin{table}[htbp!] 
+\centering 
+\footnotesize
+  \caption{Evaluating the solution} 
+  \label{}
+\begin{tabular}{l rrrrr} 
+\vspace{-4ex} \\
+\toprule
+% & \multicolumn{5}{c}{\textit{Dependent variable:}} \\ 
+%\cmidrule{2-6} 
+& \multicolumn{5}{c}{Actual equation value} \\ 
+& All & $mc$ & $a$ & $g$ & $ind$ \\ 
+\midrule
+ Predicted eq. value & 1.000$^{***}$ & 1.000$^{***}$ & 1.000$^{***}$ & 1.001$^{***}$ & 1.010$^{***}$ \\ 
+  & (0.0003) & (0.00000) & (0.000) & (0.003) & (0.004) \\ 
+  & & & & & \\ 
+ Constant & $-$0.0004 & $-$0.0003$^{***}$ & 0.0003$^{***}$ & $-$0.001 & $-$0.052$^{***}$ \\ 
+  & (0.001) & (0.00000) & (0.00000) & (0.002) & (0.019) \\ 
+\midrule
+Observations & 2,120 & 1,000 & 20 & 1,000 & 100 \\ 
+R$^{2}$ & 1.000 & 1.000 & 1.000 & 0.990 & 0.999 \\ 
+%Adjusted R$^{2}$ & 1.000 & 1.000 & 1.000 & 0.990 & 0.999 \\ 
+%Residual Std. Error & 0.032 (df = 2118) & 0.00000 (df = 998) & 0.00000 (df = 18) & 0.044 (df = 998) & 0.044 (df = 98) \\ 
+\bottomrule
+%\textit{Note:}  & \multicolumn{5}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table} 
+
+What do the plots look like? Also have sensitivity, specificity, and positive predictive value. And then rowsums of $\hat{A}$ and $\hat{G}$.
+
+\begin{figure}
+  \caption{Predicted expenditure share vs. firm size}
+  \centering
+	\includegraphics[width=\textwidth]{../assets/shares-v-size}
+	\caption*{\small \emph{Notes:} all of the firm expenditure shares should be equal to 1. Most are $1\pm0.05$, and it gets more accurate for larger firms.}
+\end{figure}
 
 \bibliographystyle{chicago}
 \bibliography{inferring-firm-networks-2}

@@ -38,9 +38,9 @@ c_binder <- function(l) {
   return(y)
 }
 
-create_X_mc <- function(I,s,upper_bound) {
+create_X_mc <- function(I,beta,s,upper_bound) {
 ## Create region-firm and firm-firm market clearing equations.
-  w <- (c(I,s) %>% to_sdiag()) %*% upper_bound # add income and size to equations.
+  w <- (c(I,(1-beta)*s) %>% to_sdiag()) %*% upper_bound # add income and size to equations.
   w <- w %>% summary() %>% tbl_df() # convert to dataframe
   
   # Idea: turn the matrix into a list of columns; use bdiag() to make a block diagonal matrix,
@@ -50,7 +50,7 @@ create_X_mc <- function(I,s,upper_bound) {
   return(X_mc)
 }
 
-create_X_ag <- function(I,s,upper_bound) {
+create_X_ag <- function(I,beta,s,upper_bound) {
 ## Create the region-firm and firm-firm expenditure matrix.
   
   # Save R and N. upper_bound is (R+N)xN
@@ -59,7 +59,7 @@ create_X_ag <- function(I,s,upper_bound) {
   R <- dims[1] - N
   
   # Add region income and firm output to equations.
-  x <- (c(I,s) %>% to_sdiag()) %*% upper_bound
+  x <- (c(I,(1-beta)*s) %>% to_sdiag()) %*% upper_bound
   
   # Convert that matrix to dataframe.
   x_df <- x %>% summary() %>% tbl_df()
@@ -80,13 +80,13 @@ create_X_ag <- function(I,s,upper_bound) {
   return(X_ag)
 }
 
-create_X_ind <- function(s, upper_bound, ik) {
+create_X_ind <- function(beta, s, upper_bound, ik) {
 ## Create the industry-pair expenditure equation matrix.
   
   # may need ((1-beta) * s) here instead. nah.
  
   # Get (NxN) diagonal size matrix, left multiply by firm-firm section of upper_bound matrix
-  x <- ((s %>% to_sdiag()) %*% # get sizes, multiply by...
+  x <- (((1-beta) * s %>% to_sdiag()) %*% # get sizes, multiply by...
           upper_bound[(R+1):(R+N),1:N]) %>%  # ...firm part of upper bound
     summary() %>% tbl_df()
 

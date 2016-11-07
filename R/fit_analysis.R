@@ -50,23 +50,24 @@ predicted_rhs <- function(fit,R,N) {
   return(list(c_mc_hat=c_mc_hat,c_a_hat=c_a_hat,c_g_hat=c_g_hat,c_ind_hat=c_ind_hat))
 }
 
-fit_summary <- function(predicted_rhs,c_mc,c_a,c_g,c_ind) {
+fit_summary <- function(predicted_rhs,c_mc,c_a,c_g,c_ind,stargazed=FALSE) {
   # 1:N, (N+1):(R+2*N), (R+2*N+1):(R+2*N+K^2)
 
-  print("Overall accuracy")
-  lm(c(c_mc,c_a,c_g,c_ind) ~ Reduce(c,predicted_rhs)) %>% summary() %>% print()
-  
-  print("Firm size accuracy / market clearing equations")
-  lm(c_mc ~ predicted_rhs$c_mc_hat) %>% summary() %>% print()
+  names <- c(rep("mc",N),rep("a",R),rep("g",N),rep("ind",K^2))
+  data <- tibble(type=names,actual=c(c_mc,c_a,c_g,c_ind),predicted=Reduce(c,prhs))
+  subs <- lapply(c("mc","a","g","ind"), function(x) { lm(actual ~ predicted, data=data %>% filter(type==x)) })
+  all <- lm(actual ~ predicted, data=data)
 
-  print("Normalization equations, A")
-  lm(c_a ~ predicted_rhs$c_a_hat) %>% summary() %>% print()
-  
-  print("Normalization equations, G")
-  lm(c_g ~ predicted_rhs$c_g_hat) %>% summary() %>% print()
+  print(all)
+  dkjlsa <- lapply(1:4, FUN=function(x) { 
+      c("Firm size accuracy / market clearing equations","Normalization equations, A","Normalization equations, G","Industry expenditure equations")[[x]] %>% print()
+      subs[[x]] %>% summary() %>% print()
+    })
 
-  print("Industry expenditure equations")
-  lm(c_ind ~ predicted_rhs$c_ind_hat) %>% summary() %>% print() 
+  if (stargazed) {
+    library(stargazer)
+    stargazer(all, subs, title="Results", align=TRUE)
+  }
 }
 
 sparsity <- function(fit,A=NULL,G=NULL) {
