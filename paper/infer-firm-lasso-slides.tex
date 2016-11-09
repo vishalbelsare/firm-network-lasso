@@ -1,0 +1,87 @@
+\documentclass[12pt]{beamer}
+%\usepackage[margin=1.25in]{geometry}                % See geometry.pdf to learn the layout 
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{caption}
+
+\begin{document}
+\title{Using Machine Learning to Infer Unobserved Firm Networks---Part 2: benchmarking}
+\author{Jesse Tweedle}
+%\date{}
+
+\begin{frame}{}
+
+\maketitle
+
+\end{frame}
+
+\begin{frame}{Outline}
+\begin{enumerate}
+\item Problem
+\item Needs
+\item Approach: separate data, benchmarking, methods steps, improve each one separately.
+\item Data sources
+\item Methods
+\item Results
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Problem}
+
+Have lots of data. Want to infer firm-firm trading relationships. But: want it to be internally consistent---a firm can't produce \$10 million of output and only have customers that buy \$1,000. Also need it to be externally consistent: if you add up all the firm-firm relationships, you should get back to industry accounts. More detail on this later.
+
+\end{frame}
+
+\begin{frame}{Needs}
+
+Data: firm-firm (really location-location or establishment-establishment, we hope). We'll take anything that indicates a relationship between establishments. Method to infer links between establishments based on those data.  Method to benchmark to the national accounts, and itself. Then look at results. Also want to seperate these things. 
+
+\end{frame}
+
+\begin{frame}{Approach}
+(1) Start with manufacturing. Get data + methods to work. Check results. Refine each step.  
+
+Data: STF, IO, IPTF, ASM, etc.
+
+Method: pick possible links using the data, then Lasso to benchmark / solve system of equations.
+
+\end{frame}
+
+\begin{frame}{Data sources (for now)}
+
+Data: STF, IO, IPTF, ASM, etc. Describe each one.
+
+\end{frame}
+
+\begin{frame}{Methods}
+
+(1) Use IO, STF, ASM, IPTF to give any possible link between firms (e.g., an upper bound on links between firms), then a subset that we think is most likely (a lower bound on the set of links between firms).
+
+(2) Benchmark to make expenditures between firms internally and externally consistent. Need to solve a huge, underdetermined system of equations, a big linear programming problem (tens-of-thousands of equations, hundreds of millions of parameters, maybe). Lasso is a good way.
+
+\end{frame}
+
+\begin{frame}{Results}
+
+(1) it works, doesn't crash the server (for now).  (2) it's relatively fast (x mins to solve manufacturing problem. (3) it works, relatively well, needs more refinement in input data to get it to work better---import/export registry, IO tables, final demand and such.
+
+\end{frame}
+
+%\bibliographystyle{chicago}
+%\bibliography{inferring-firm-networks-2}
+
+\end{document}
+
+
+
+
+
+
+
+

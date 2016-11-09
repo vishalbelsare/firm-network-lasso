@@ -44,6 +44,8 @@ vignettes/*.pdf
 *.fot
 *.cb
 *.cb2
+*.nav
+*.snm
 
 ## Intermediate documents:
 *.dvi
