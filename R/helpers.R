@@ -8,28 +8,22 @@
 # Sep 15, 2016
 ########################################################################
 
-rmgc <- function(...,list=character(),pos=-1,envir=as.environment(pos),inherits=FALSE) {
-  dots <- match.call(expand.dots=FALSE)$...
-  rm(dots,list=character(),pos=-1,envir=as.environment(pos),inherits=FALSE)
-  gc()
-}
-
 load_libraries <- function(inside_parallel=FALSE) {
   # Load relevant libraries:
   
   # For sparse matrices
   library(Matrix)
   
-  # # Tidy packages
-  # library(dplyr)
-  # 
-  # # To load data.
-  # library(readr)
-  library(tidyverse)
+  # Tidy packages
+  library(dplyr)
+  library(readr)
+  library(tibble)
+  library(stringr)
+  library(tidyr)
+  # library(tidyverse) # don't have tidyverse at work.
     
   # For Lasso.
   library(glmnet)
-  
   
 #  library(xgboost)
   

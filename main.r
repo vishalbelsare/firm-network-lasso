@@ -23,8 +23,8 @@ fakes <- TRUE
 if (fakes) {
   print("Initialize fake data.")
   R <- 20  # Number of regions
-  N <- 1000 # Number of firms
-  K <- 10  # Number of industries; each industry must have more than one firm, 
+  N <- 5000 # Number of firms
+  K <- 30  # Number of industries; each industry must have more than one firm, 
   # or glmnet fails (at least until I add more equations).
   region_density <- 0.05
   firm_density <- 0.01
@@ -61,14 +61,22 @@ nonzero_vars <- x %>% summary() %>%
 
 dim(lower_bound) <- c((R+N)*N,1)
 x <- cbind(x,lower_bound)
-rmgc(lower_bound)
+rm(lower_bound)
 penalty <- 1 - 1*x[rowSums(x)>0,2] # next, gonna try to change this to re-weight up firm expenditure relative to region expenditure (e.g., R/N or something)
-rmgc(x,lower_bound)
+rm(x)
+gc()
 
+# library(profvis)
+# library(pryr)
 ## instead: should create that in X_ind. can calculate hmm...
-X_ind <- create_X_ind(beta=beta,s=s,upper_bound=upper_bound,ik=ik)
-# choose from potential non-zero variables that go into glmnet
-X_ind <- X_ind[,nonzero_vars[["i_original"]]]
+# I think I Need to pass in nonzero_vars.
+# profvis(X_ind <- create_X_ind(beta=beta,s=s,upper_bound=upper_bound,ik=ik,nonzero_vars=nonzero_vars))
+X_ind <- create_X_ind(beta=beta,s=s,upper_bound=upper_bound,ik=ik,nonzero_vars=nonzero_vars)
+# much better if I store it in transpose. but then I have to do that for all of them individually, then rbind instead of cbind, etc.
+
+# choose from potential non-zero variables that go into glmnet.
+# i_original are the column indices that are picked.
+# X_ind <- X_ind[,nonzero_vars[["i_original"]]]
 
 X_mc <- create_X_mc(I,beta,s,upper_bound)
 X_ag <- create_X_ag(I,beta,s,upper_bound)
@@ -81,7 +89,7 @@ c_ind <- kk[,1]
 # Apply it all together.
 c <- c(c_mc,c_a,c_g,c_ind)
 X <- rbind(X_mc,X_ag,X_ind)
-rmgc(X_mc,X_ag,X_ind)
+rm(X_mc,X_ag,X_ind)
 
 # deviance for some reason can go above 100%? I just want it to be as high as possible.
 glmnet.control(devmax = 5) 
@@ -104,7 +112,7 @@ prhs <- fit %>% predicted_rhs(R=R,N=N)
 
 # these are so good that they aren't that useful anymore. but good for data.
 # plot_rhs(prhs,var="mc",log=TRUE) # so output is all correct
-# plot_rhs(prhs,var="g",log=FALSE) # but some firm-firm expenditure is zero,
+# plot_rhs(prhs,var="g",log=TRUE) # but some firm-firm expenditure is zero,
 # plot_rhs(prhs,var="a",log=FALSE)
 # plot_rhs(prhs,var="ind",log=FALSE)
 
@@ -112,7 +120,7 @@ prhs <- fit %>% predicted_rhs(R=R,N=N)
 # plot_graph(G=pm$G_hat,edge_val_lower_bound=0.25)
 
 fit_summary(prhs,c_mc,c_a,c_g,c_ind)
-fit_summary(prhs,c_mc,c_a,c_g,c_ind,stargazed=TRUE)
+# fit_summary(prhs,c_mc,c_a,c_g,c_ind,stargazed=TRUE)
 
 # Specificity, sensitivity.
 # sensitivity_specificity(args$G,pm$G_hat) # input true and estimated matrices.
