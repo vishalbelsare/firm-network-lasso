@@ -21,11 +21,13 @@ r_binder <- function(l) {
   # do.call on a sublist of zz, determined by index i.
   # goes from NN*(i-1)+1 to NN*i
   g <- function(i,z) {
+    
     do.call(rbind,z[(NN*(i-1)+1):(NN*i)] %>% unlist())
   }
   
   # cbind each of the elements of each sublist, to get a list
   # of cbinded elements. 
+  library(parallel)
   w <- lapply(1:NN,g,z=l)
   
   # if leftovers, add them as well. 
@@ -51,13 +53,18 @@ c_binder <- function(l) {
   
   # do.call on a sublist of zz, determined by index i.
   # goes from NN*(i-1)+1 to NN*i
-  g <- function(i,z) {
+  g <- function(i,z,NN) {
+    source("/Users/jessetweedle/Documents/github/firm-network-lasso/R/helpers.r")
+    load_libraries(inside_parallel=TRUE)
     do.call(cbind,z[(NN*(i-1)+1):(NN*i)] %>% unlist())
   }
   
   # cbind each of the elements of each sublist, to get a list
   # of cbinded elements. 
-  w <- lapply(1:NN,g,z=l)
+  cl <- makeCluster(2)
+  w <- parLapply(cl,1:NN,g,z=l,NN=NN)
+#  w <- lapply(1:NN,g,z=l)
+  stopCluster(cl)
   
   # if leftovers, add them as well. 
   if (leftovers>0) {
@@ -114,6 +121,7 @@ create_X_ag <- function(I,beta,s,upper_bound) {
 create_X_ind <- function(beta, s, upper_bound, ik, nonzero_vars) {
 ## Create the industry-pair expenditure equation matrix.
   
+  library(parallel)
   # may need ((1-beta) * s) here instead. nah.
  
   # Get (NxN) diagonal size matrix, left multiply by firm-firm section of upper_bound matrix
@@ -133,9 +141,10 @@ create_X_ind <- function(beta, s, upper_bound, ik, nonzero_vars) {
   # industry-final demand IOT/SUT data. 
   rub <- upper_bound[1:R,1:N]
 
-  f <- function(j,y) {
+  f <- function(j,y,rub,K,R,N) {
     temp <- j # producer/firm/column.
-    
+    source("/Users/jessetweedle/Documents/github/firm-network-lasso/R/helpers.r")
+    load_libraries(inside_parallel=TRUE)
     # Take the j-th column of upper bound, reshape it into (KKxR) matrix. KK is the number of industry pairs,
     # R are the number of regions; this makes an empty KKxR matrix for each firm (because I don't have
     # the region-industry expenditures yet.
@@ -158,8 +167,10 @@ create_X_ind <- function(beta, s, upper_bound, ik, nonzero_vars) {
   }
   
   # Start with y; for each producer/firm/column (1:N), apply f
-  zz <- lapply(1:N,f,y=y)
-
+  # zz <- lapply(1:N,f,y=y)
+  cl <- makeCluster(2)
+  zz <- parLapply(cl,1:N,f,y=y,rub=rub,K=K,R=R,N=N)
+  stopCluster(cl)
   # Special cbind program to avoid node stack overflow. Sticks all elements of list together.  
   # This should be a (KKx(R+N)N) matrix. I use nonzero_vars to remove 
   # parameters that aren't in upper_bound in order to pass it to glmnet with less parameters.

@@ -23,8 +23,8 @@ fakes <- TRUE
 if (fakes) {
   print("Initialize fake data.")
   R <- 20  # Number of regions
-  N <- 5000 # Number of firms
-  K <- 30  # Number of industries; each industry must have more than one firm, 
+  N <- 1000 # Number of firms
+  K <- 10  # Number of industries; each industry must have more than one firm, 
   # or glmnet fails (at least until I add more equations).
   region_density <- 0.05
   firm_density <- 0.01
