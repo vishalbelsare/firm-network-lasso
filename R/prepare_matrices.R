@@ -6,11 +6,13 @@
 # Jesse Tweedle
 # Oct 18, 2016
 ########################################################################
-r_binder <- function(l) {
+r_binder <- function(l,r_bind=TRUE) {
+  # r_bind -> rbind the matrices all together. 
+  # !r_bind -> cbind the matrices all together. could use eval(parse) type code to eliminate if-statements?
+  
   # new rbind function to avoid node stack overflow when rbinding N matrices together
   # N could be thousands or tens-of-thousands or more. same as c_binder, but transpose
   # for sparse matrices that are better stored in row form.
-  
   N <- length(l)
   
   # recursively call lapply on half the list? no, too many.
@@ -20,60 +22,44 @@ r_binder <- function(l) {
   
   # do.call on a sublist of zz, determined by index i.
   # goes from NN*(i-1)+1 to NN*i
-  g <- function(i,z) {
-    
-    do.call(rbind,z[(NN*(i-1)+1):(NN*i)] %>% unlist())
+  if (r_bind) {
+    g <- function(z) {
+      library(Matrix)
+      do.call(rbind,unlist(z))
+    }
+  } else if (!r_bind) {
+    g <- function(z) {
+      library(Matrix)
+      do.call(cbind,unlist(z))
+    }
   }
-  
-  # cbind each of the elements of each sublist, to get a list
-  # of cbinded elements. 
-  library(parallel)
-  w <- lapply(1:NN,g,z=l)
-  
-  # if leftovers, add them as well. 
-  if (leftovers>0) {
-    w <- list(w,l[(NN^2+1):N])
+
+  # this is used to split the list into pieces; need a vector that says
+  # 1,1,...,1 for the first NN, then 2,2,..,2, etc etc. 
+  # Then split() uses that to split the given list l into NN+1 pieces, 
+  # so that the first NN elements are in the first new list element, and so on.
+  # then we pass each individual list into the g function, which rbinds it.
+  x <- matrix(data=1:NN,nrow=NN,ncol=NN,byrow=TRUE)
+  dim(x) <- c(NN^2,1)
+  x <- c(x[,1],rep_len(NN+1,N-NN^2))
+  z <- split(l %>% unlist(),x)
+
+  cl <- makeCluster(2)
+  w <- parLapply(cl,z,g)
+  stopCluster(cl)
+  # we get back `w`, which is a list of rbinded matrices that need to be rbinded themselves.
+
+  # rbind the sublists together.
+  if (r_bind) {
+    y <- do.call(rbind,w %>% unlist())
+  } else if (!r_bind) {
+    y <- do.call(cbind,w %>% unlist())
   }
-  
-  # cbind the sublists together.
-  y <- do.call(rbind,w %>% unlist())
   return(y)
 }
 
 c_binder <- function(l) {
-# new cbind function to avoid node stack overflow when cbinding N matrices together
-# N could be thousands or tens-of-thousands or more. 
-  
-  N <- length(l)
-  
-  # recursively call lapply on half the list? no, too many.
-  # divide into sqrt(N) lists of sqrt(N), plus leftovers.
-  NN <- floor(N^(1/2))
-  leftovers <- N-NN^2
-  
-  # do.call on a sublist of zz, determined by index i.
-  # goes from NN*(i-1)+1 to NN*i
-  g <- function(i,z,NN) {
-    source("/Users/jessetweedle/Documents/github/firm-network-lasso/R/helpers.r")
-    load_libraries(inside_parallel=TRUE)
-    do.call(cbind,z[(NN*(i-1)+1):(NN*i)] %>% unlist())
-  }
-  
-  # cbind each of the elements of each sublist, to get a list
-  # of cbinded elements. 
-  cl <- makeCluster(2)
-  w <- parLapply(cl,1:NN,g,z=l,NN=NN)
-#  w <- lapply(1:NN,g,z=l)
-  stopCluster(cl)
-  
-  # if leftovers, add them as well. 
-  if (leftovers>0) {
-    w <- list(w,l[(NN^2+1):N])
-  }
-  
-  # cbind the sublists together.
-  y <- do.call(cbind,w %>% unlist())
-  return(y)
+  return(r_binder(l,r_bind=FALSE))
 }
 
 create_X_mc <- function(I,beta,s,upper_bound) {
@@ -141,13 +127,19 @@ create_X_ind <- function(beta, s, upper_bound, ik, nonzero_vars) {
   # industry-final demand IOT/SUT data. 
   rub <- upper_bound[1:R,1:N]
 
-  f <- function(j,y,rub,K,R,N) {
+  # f <- function(j,y,rub,K,R,N) {
+  f <- function(j,y) {
     temp <- j # producer/firm/column.
-    source("/Users/jessetweedle/Documents/github/firm-network-lasso/R/helpers.r")
+    # need matrix, need dplyr, need df_to_s()
+    # source("/Users/jessetweedle/Documents/github/firm-network-lasso/R/helpers.r")
+    library(Matrix)
     load_libraries(inside_parallel=TRUE)
     # Take the j-th column of upper bound, reshape it into (KKxR) matrix. KK is the number of industry pairs,
     # R are the number of regions; this makes an empty KKxR matrix for each firm (because I don't have
     # the region-industry expenditures yet.
+    
+    # shouldn't need rub either, since i just delete everything anyway, that's just useful I think.
+    # define sparse matrix with one element=0, with correct dims, then set to 0?
     v <- matrix(data=rub[,temp],nrow=K^2,ncol=R,byrow=TRUE) %>% as("sparseMatrix")
     v@x <- rep_len(0,length(v@x))
     v <- v %>% summary() %>% tbl_df() %>% filter(x>0) %>% df_to_s(dims=c(K^2,R)) 
@@ -167,10 +159,14 @@ create_X_ind <- function(beta, s, upper_bound, ik, nonzero_vars) {
   }
   
   # Start with y; for each producer/firm/column (1:N), apply f
-  # zz <- lapply(1:N,f,y=y)
   cl <- makeCluster(2)
-  zz <- parLapply(cl,1:N,f,y=y,rub=rub,K=K,R=R,N=N)
+  # pass in important arguments and libraries?
+  clusterExport(cl,c('df_to_s','load_libraries','K','R','N','rub'),envir=environment())
+# par.setup <- parLapply(cl,1:length(cl), function )
+  # zz <- parLapply(cl,1:N,f,y=y,rub=rub,K=K,R=R,N=N)
+  zz <- parLapply(cl,1:N,f,y=y)
   stopCluster(cl)
+
   # Special cbind program to avoid node stack overflow. Sticks all elements of list together.  
   # This should be a (KKx(R+N)N) matrix. I use nonzero_vars to remove 
   # parameters that aren't in upper_bound in order to pass it to glmnet with less parameters.

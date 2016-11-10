@@ -66,6 +66,7 @@ penalty <- 1 - 1*x[rowSums(x)>0,2] # next, gonna try to change this to re-weight
 rm(x)
 gc()
 
+
 # library(profvis)
 # library(pryr)
 ## instead: should create that in X_ind. can calculate hmm...

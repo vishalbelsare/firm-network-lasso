@@ -34,9 +34,106 @@
 
 \begin{frame}{Problem}
 
-Have lots of data. Want to infer firm-firm trading relationships. But: want it to be internally consistent---a firm can't produce \$10 million of output and only have customers that buy \$1,000. Also need it to be externally consistent: if you add up all the firm-firm relationships, you should get back to industry accounts. More detail on this later.
+\begin{block}{Goal: study firm-firm trade}
+To understand
+\begin{itemize}
+\item supply chains and vertical integration
+\item intra-firm trade
+\item and more
+\end{itemize}
+\end{block}
+
+\begin{block}{Problem: we don't have firm-firm transaction data}
+But: 
+\begin{itemize}
+\item we have lots of useful data
+\item and an idea of how to use it
+\end{itemize}
+\end{block}
+
+%Have lots of data. Want to infer firm-firm trading relationships. But: want it to be internally consistent---a firm can't produce \$10 million of output and only have customers that buy \$1,000. Also need it to be externally consistent: if you add up all the firm-firm relationships, you should get back to industry accounts. More detail on this later.
 
 \end{frame}
+
+\begin{frame}{Facts / needs}
+% this slide: some things: few relationships. 
+\begin{block}{Facts: start with manufacturing}
+\begin{itemize}
+\item $\approx 30$k plants. 
+\item $\approx 900$m possible connections.
+\item $\approx 70$ industries (IOIC)
+\item $x$ goods (detailed confidential IOCC)
+\end{itemize}
+\end{block}
+
+\begin{block}{Needs}
+\begin{itemize}
+\item Data that indicates relationship between plants
+\item Method to identify relationships
+\item Method to benchmark to make sure it all adds up
+\end{itemize}
+\end{block}
+
+\end{frame}
+
+
+
+\begin{frame}{Normal approach: idea}
+
+\begin{block}{To achieve this:}
+\begin{itemize}
+\item Data that indicates relationship between plants
+\item Method to identify relationships
+\end{itemize}
+\end{block}
+
+\begin{block}{Do this:}
+\begin{itemize}
+\item Use supply-use/input-output tables
+\item Assume every firm-firm relationship is the same as the industry IO relationship
+\end{itemize}
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Normal approach: problems}
+
+% use full thing here, or just manufacturing?
+\begin{block}{Implies way too many plant-plant relationships}
+\begin{itemize}
+\item Use goods-only, square IO table, DC level
+\item $\approx 70^2 = 4900$ possible connections
+\item $\approx $ actual connections
+\item 50\% density---half of the possible connections are given
+\item Gets worse using full table: 90\% density of $50000+$ possible connections
+\end{itemize}
+\end{block}
+
+% HERE: why is this wrong.
+
+% every plant in an industry trades with every other plant in the other industry (with positive entry in IO table)
+% if industries are the same, then plant trades with itself---wrong
+
+% To get an idea of better number. Just use ASM commodity files. Commodities just don't line up.
+% Can't just cut IO table off at some direct requirement level either, because you drop so much expenditure.
+
+
+\end{frame}
+
+\begin{frame}{Normal approach: problems}
+
+% assign small plant as important supplier to big plant---IO numbers are not consistent with plant numbers
+% may be missing some connections? industry definitions or something.
+% so still need to benchmark.
+
+\begin{block}{Plant and IO data may not be consistent}
+\begin{itemize}
+\item Relationship may not be consistent with plant data % may be assigning tiny auto parts plant as an important supplier to GM assembly plant
+\item Plant-plant relationships may not be consistent with industry IO
+\end{itemize}
+\end{block}
+\end{frame}
+
 
 \begin{frame}{Needs}
 
