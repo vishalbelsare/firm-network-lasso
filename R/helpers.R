@@ -67,7 +67,6 @@ s_to_df <- function(m) {
 # Convert data.frame to a sparseMatrix.
 df_to_s <- function(tdf,dims) {
   with(tdf, sparseMatrix(i=i,j=j,x=x,dims=dims))
-#  sparseMatrix(i=tdf$i,j=tdf$j,x=tdf$x,dims=dims) # make sure dims here; if last i or j is missing, dims might not match.
 }
 
 # Convert either a one-dimensional matrix or a vector to a sparse diagonal matrix.

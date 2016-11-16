@@ -22,9 +22,9 @@ startup()
 fakes <- TRUE
 if (fakes) {
   print("Initialize fake data.")
-  R <- 20  # Number of regions
-  N <- 1000 # Number of firms
-  K <- 10  # Number of industries; each industry must have more than one firm, 
+  R <- 70  # Number of regions
+  N <- 15000 # Number of firms
+  K <- 70  # Number of industries; each industry must have more than one firm, 
   # or glmnet fails (at least until I add more equations).
   region_density <- 0.05
   firm_density <- 0.01
@@ -48,7 +48,7 @@ beta <- args$beta
 upper_bound <- upper_bound(args$A,args$G,region_density,firm_density) 
 
 # Lower bound is a sub-sample of true data A and G.
-lower_bound <- lower_bound(args$A,args$G,region_sample_frac=0.5,firm_sample_frac=0.1)
+# lower_bound <- lower_bound(args$A,args$G,region_sample_frac=0.5,firm_sample_frac=0.1)
 
 x <- upper_bound
 dim(x) <- c((R+N)*N,1)
@@ -59,28 +59,15 @@ nonzero_vars <- x %>% summary() %>%
   select(-j,-x) %>% 
   mutate(i_original=as.numeric(i_original),i_hat=as.numeric(i_hat))
 
-dim(lower_bound) <- c((R+N)*N,1)
-x <- cbind(x,lower_bound)
-rm(lower_bound)
-penalty <- 1 - 1*x[rowSums(x)>0,2] # next, gonna try to change this to re-weight up firm expenditure relative to region expenditure (e.g., R/N or something)
-rm(x)
-gc()
-
-
-# library(profvis)
-# library(pryr)
-## instead: should create that in X_ind. can calculate hmm...
-# I think I Need to pass in nonzero_vars.
-# profvis(X_ind <- create_X_ind(beta=beta,s=s,upper_bound=upper_bound,ik=ik,nonzero_vars=nonzero_vars))
-X_ind <- create_X_ind(beta=beta,s=s,upper_bound=upper_bound,ik=ik,nonzero_vars=nonzero_vars)
-# much better if I store it in transpose. but then I have to do that for all of them individually, then rbind instead of cbind, etc.
-
-# choose from potential non-zero variables that go into glmnet.
-# i_original are the column indices that are picked.
-# X_ind <- X_ind[,nonzero_vars[["i_original"]]]
+# dim(lower_bound) <- c((R+N)*N,1)
+# x <- cbind(x,lower_bound)
+# rm(lower_bound)
+# penalty <- 1 - 1*x[rowSums(x)>0,2] # next, gonna try to change this to re-weight up firm expenditure relative to region expenditure (e.g., R/N or something)
+# rm(x)
 
 X_mc <- create_X_mc(I,beta,s,upper_bound)
 X_ag <- create_X_ag(I,beta,s,upper_bound)
+X_ind <- create_X_ind(beta=beta,s=s,upper_bound=upper_bound,ik=ik,nonzero_vars=nonzero_vars)
 
 c_mc <- s # RHS for market clearing equations
 c_a <- I #rep_len(1,R) # RHS for rowSums(A) = 1 equations
@@ -101,11 +88,11 @@ nlambda <- 100
 
 # Try penalty with different for R and N. should be able to use upper_bound for that.
 # penalty <- c(rep_len(1/R,R),rep_len(1/N,N)) %>% to_sdiag() %*% upper_bound
-penalty <- c(I^(0.5),s^(0.025)) %>% to_sdiag() %*% upper_bound
-dim(penalty) <- c(R*N+N^2,1)
-penalty <- penalty[rowSums(penalty)>0,1]
+# penalty <- c(I^(0.5),s^(0.025)) %>% to_sdiag() %*% upper_bound
+# dim(penalty) <- c(R*N+N^2,1)
+# penalty <- penalty[rowSums(penalty)>0,1]
 
-fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-12)
+system.time(fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-12))
 # fit <- fit_glmnet(X,c,alpha=1,nlambda=nlambda,lambda.min.ratio=1e-12,penalty=penalty)
 pm <- fit %>% predicted_matrices(R=R,N=N,nonzero_vars=nonzero_vars)
 
@@ -134,6 +121,17 @@ sparsity(fit)
 # plot rowSums(G) vs. total size?
 rah <- rowSums(pm$A_hat)
 rgh <- rowSums(pm$G_hat) #+beta
-rah %>% summary()
-rgh %>% summary()
-ggplot() + geom_point(aes(x=s,y=rgh),alpha=0.25) + scale_x_log10(breaks=c(0.1,0.25,0.5,1,2,4,8)) + labs(x="Firm size",y="Sum of firm expenditure shares")
+x3 <- 100*(prhs$c_mc_hat / c_mc - 1) %>% summary()
+x2 <- ((rgh-1)*100) %>% summary()
+x4 <- 100*(prhs$c_ind / c_ind - 1) %>% summary()
+x1 <- ((rah-1)*100) %>% summary()
+rbind(x3,x2,x4,x1)
+
+# x <- tibble(size=s,share=(rgh-1)*100)
+x <- tibble(size=s,share=(rgh-1)*100)
+
+p <- ggplot(x %>% sample_n(500),aes(x=size,y=share)) + geom_point() + scale_x_log10(breaks=c(0.1,0.25,0.5,1,2,4,8)) + labs(x="Firm size",y="Sum of firm expenditure shares")
+# ggplot() + geom_point(aes(x=s,y=rgh),alpha=0.01) + scale_x_log10(breaks=c(0.1,0.25,0.5,1,2,4,8)) + labs(x="Firm size",y="Sum of firm expenditure shares")
+ggsave("paper/size-share-plot.pdf",p,width=4.83,height=3.34)
+
+
