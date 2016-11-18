@@ -22,9 +22,9 @@ startup()
 fakes <- TRUE
 if (fakes) {
   print("Initialize fake data.")
-  R <- 70  # Number of regions
-  N <- 15000 # Number of firms
-  K <- 70  # Number of industries; each industry must have more than one firm, 
+  R <- 20  # Number of regions
+  N <- 1500 # Number of firms
+  K <- 20  # Number of industries; each industry must have more than one firm, 
   # or glmnet fails (at least until I add more equations).
   region_density <- 0.05
   firm_density <- 0.01
@@ -64,6 +64,8 @@ nonzero_vars <- x %>% summary() %>%
 # rm(lower_bound)
 # penalty <- 1 - 1*x[rowSums(x)>0,2] # next, gonna try to change this to re-weight up firm expenditure relative to region expenditure (e.g., R/N or something)
 # rm(x)
+
+xxx
 
 X_mc <- create_X_mc(I,beta,s,upper_bound)
 X_ag <- create_X_ag(I,beta,s,upper_bound)

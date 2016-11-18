@@ -76,6 +76,86 @@
 
 \end{frame}
 
+\begin{frame}{Broad introduction to machine learning}
+
+\begin{block}{Algorithms that do statistics}
+\begin{itemize}
+\item Like regular econometrics, but focused on getting $\hat{y}$ right instead of estimating $\hat{\beta}$
+\item Mainly classification; e.g., optical character recognition (``what letter is this?")
+\item Converted to regression-style question:
+\begin{itemize}
+\item One observation = one image of a character
+\item Dependent variables = each pixel in the image
+\item Predict what the letter is (e.g., $\hat{y} $ = `a')
+\end{itemize}
+\end{itemize}
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Example: image recognition}
+
+\begin{figure}[h]
+\caption{A three. A prediction algorithm should produce $\hat{y} = 3$.}
+\centering
+\fbox{\includegraphics[width=0.75\textwidth]{three}}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{Why ``learning''?}
+
+\begin{block}{Easy reason---it does variable selection}
+
+Problem: you get firm data from CRA, you want to assign a NAICS code ($y$). 
+
+\begin{itemize}
+\item There are tons of possible variables you could use to predict a firm's industry.
+\item Possibly more variables than observations (which means can't solve OLS problem $(X^T X)^{-1} X^T y$
+\end{itemize}
+
+\end{block}
+
+\begin{block}{ML approach}
+Stick all the variables in a blender
+\begin{itemize}
+\item Algorithm starts with no predictors, adds them one-by-one 
+\item ``Learns'' which ones are most important 
+\item Use those coefficients to predict industries for out-of-sample firms
+\end{itemize}
+
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Some links / resources}
+
+\begin{block}{Google's Open Source AI: TensorFlow}
+\begin{itemize}
+\item \url{https://github.com/tensorflow/tensorflow}
+\item \url{https://www.tensorflow.org/}
+\item \url{http://playground.tensorflow.org/}
+\end{itemize}
+\end{block}
+
+\begin{block}{Facebook / Columbia / World Bank datasets}
+Analyze satellite imagery to create dataset on building density
+\url{https://code.facebook.com/posts/596471193873876/open-population-datasets-and-open-challenges/}
+\end{block}
+
+\begin{block}{Text: Elements of Statistical Learning}
+Hastie, Tibshirani, Friedman (2009)
+\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}
+\end{block}
+
+% visualization stuff
+
+% "statistical learning" books. 
+
+% tensorflow, others.
+
+\end{frame}
+
 %\begin{frame}{Outline}
 %\begin{enumerate}
 %\item Problem
@@ -227,7 +307,7 @@ Use lots, from many sources.
 For now, stick to one year, 2010. Easier on classifications / concordances / consistency across datasets. 
 
 \begin{itemize}
-\item Surface Transporation File (STF): database of goods shipments; commodity, value, distance, postal code origin and destination
+\item Surface Transportation File (STF): database of goods shipments; commodity, value, distance, postal code origin and destination
 \item ASM: industry, postal codes, provincial shipment breakdown, commodity inputs and outputs
 \item Input-output tables (IO): industry, commodity inputs and outputs; can calculate industry pair expenditures and direct requirements
 \item Inter-provincial trade flows (IPTF): trade by province origin and destination, and commodity
@@ -520,40 +600,42 @@ Firm sales                 	&	15000	&	$-$0.003	&	$-$0.004	&	$-$0.003	&	$-$0.002	
 
 \end{frame}
 
-\begin{frame}{Results---real data}
-
-\begin{block}{Timing}
-$N = $, $R=73$, $K=$, with $x\%$ plant-plant density; around 900m parameters, about 10m of which are nonzero.
-\begin{itemize}
-\item $\approx x$ minutes
-\end{itemize}
-\end{block}
-
-%\begin{block}{}
-\begin{table}[]
-\centering
-\footnotesize
-\caption{\% difference between predicted and actual values}
-\label{my-label}
-\begin{tabular}{l rrrrr}
-\toprule
-                          & Obs & Mean &  25$^{th}$ & Median & 75$^{th}$ \\
-\midrule                          
-Plant sales                 	&		&		&		&		&		                 \\Plant expenditure           	&		&		&		&		&		                \\Industry pair exp. 	&		&		&		&		&		                 \\Region exp.         	&		&		&		&		&		                 \\
-	\bottomrule
-\end{tabular}
-\end{table}
+%\begin{frame}{Results---real data}
+%
+%\begin{block}{Timing}
+%$N = $, $R=73$, $K=$, with $x\%$ plant-plant density; around 900m parameters, about 10m of which are nonzero.
+%\begin{itemize}
+%\item $\approx x$ minutes
+%\end{itemize}
 %\end{block}
-
-\end{frame}
+%
+%%\begin{block}{}
+%\begin{table}[]
+%\centering
+%\footnotesize
+%\caption{\% difference between predicted and actual values}
+%\label{my-label}
+%\begin{tabular}{l rrrrr}
+%\toprule
+%                          & Obs & Mean &  25$^{th}$ & Median & 75$^{th}$ \\
+%\midrule                          
+%Plant sales                 	&		&		&		&		&		                 \\%Plant expenditure           	&		&		&		&		&		                \\%Industry pair exp. 	&		&		&		&		&		                 \\%Region exp.         	&		&		&		&		&		                 \\
+%	\bottomrule
+%\end{tabular}
+%\end{table}
+%%\end{block}
+%
+%\end{frame}
 
 \begin{frame}{Results---real data}
 
-\begin{figure}[h]
-\caption{Predicted firm output vs. actual firm output (figure is placeholder).}
-\centering
-\includegraphics[width=0.8\textwidth]{size-share-plot}
-\end{figure}
+Fig: firm size, and maybe expenditure. And next frame: industry.
+
+%\begin{figure}[h]
+%\caption{Predicted firm output vs. actual firm output (figure is placeholder).}
+%\centering
+%\includegraphics[width=0.8\textwidth]{size-share-plot}
+%\end{figure}
 
 \end{frame}
 
@@ -565,18 +647,18 @@ Plant sales                 	&		&		&		&		&		                 \\Plant expenditur
 \end{itemize}
 \end{block}
 
-\begin{block}{On real data, without industries}
-\begin{itemize}
-\item Works well, and fast
-\item Because it doesn't have too many constraints
-\end{itemize}
-\end{block}
+%\begin{block}{On real data, without industries}
+%\begin{itemize}
+%\item Works well, and fast
+%\item Because it doesn't have too many constraints
+%\end{itemize}
+%\end{block}
 
-\begin{block}{On real data, with industries}
+\begin{block}{On real data}
 \begin{itemize}
-\item Works fast, but not so well
+\item Works fast, but so-so accuracy
 \item Not surprising, given lack of trade data
-\item More importantly: means input data and prediction algorithm needs work; not getting the right industry connections
+\item More importantly: means input data and prediction algorithm needs work; not getting the right industry connections / values
 \end{itemize}
 \end{block}
 
