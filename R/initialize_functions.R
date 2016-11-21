@@ -8,7 +8,7 @@
 # Oct, 2016
 ########################################################################
 
-initialize_fake_economy <- function(R,K,N,region_density,firm_density,scale) {
+initialize_fake_economy <- function(R,K,N,region_density,firm_density,scale=N) {
   
   # Plant value-added share
   beta <- runif(N,0.1,0.9)

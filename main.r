@@ -65,8 +65,6 @@ nonzero_vars <- x %>% summary() %>%
 # penalty <- 1 - 1*x[rowSums(x)>0,2] # next, gonna try to change this to re-weight up firm expenditure relative to region expenditure (e.g., R/N or something)
 # rm(x)
 
-xxx
-
 X_mc <- create_X_mc(I,beta,s,upper_bound)
 X_ag <- create_X_ag(I,beta,s,upper_bound)
 X_ind <- create_X_ind(beta=beta,s=s,upper_bound=upper_bound,ik=ik,nonzero_vars=nonzero_vars)
@@ -136,4 +134,4 @@ p <- ggplot(x %>% sample_n(500),aes(x=size,y=share)) + geom_point() + scale_x_lo
 # ggplot() + geom_point(aes(x=s,y=rgh),alpha=0.01) + scale_x_log10(breaks=c(0.1,0.25,0.5,1,2,4,8)) + labs(x="Firm size",y="Sum of firm expenditure shares")
 ggsave("paper/size-share-plot.pdf",p,width=4.83,height=3.34)
 
-
+# so if I want to send this to a new thing? make a new function that calls this.

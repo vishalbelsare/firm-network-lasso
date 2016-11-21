@@ -54,7 +54,7 @@ fit_summary <- function(predicted_rhs,c_mc,c_a,c_g,c_ind,stargazed=FALSE) {
   # 1:N, (N+1):(R+2*N), (R+2*N+1):(R+2*N+K^2)
 
   names <- c(rep("mc",N),rep("a",R),rep("g",N),rep("ind",K^2))
-  data <- tibble(type=names,actual=c(c_mc,c_a,c_g,c_ind),predicted=Reduce(c,prhs))
+  data <- tibble(type=names,actual=c(c_mc,c_a,c_g,c_ind),predicted=Reduce(c,predicted_rhs))
   subs <- lapply(c("mc","a","g","ind"), function(x) { lm(actual ~ predicted, data=data %>% filter(type==x)) })
   all <- lm(actual ~ predicted, data=data)
 
